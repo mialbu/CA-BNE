@@ -148,7 +148,7 @@ public class BNEAlgorithm<Value, Bid> {
 			// This is the outer loop. First thing we do is go into the inner loop
 			while (iteration <= maxIters) {
 				// This is the inner loop.				
-				context.activateConfig("innerloop");
+				context.activateConfig("innerloop");  // innerloop configs activated
 				brc = context.brc;
 				
 				// Note that playOneRound updates the strategies in place.
@@ -169,7 +169,7 @@ public class BNEAlgorithm<Value, Bid> {
 						
 			lastOuterIteration = iteration;
 			
-			context.activateConfig("outerloop");
+			context.activateConfig("outerloop");  // outerloop configs activated
 			brc = context.outerBRC;
 			if (brc == null) {
 				return new Result<>(Double.POSITIVE_INFINITY, strategies);
@@ -186,7 +186,7 @@ public class BNEAlgorithm<Value, Bid> {
 			}
 		}
 
-		context.activateConfig("verificationstep");
+		context.activateConfig("verificationstep");  // verification configs activated
 		boolean outerloopConverged = highestEpsilon <= targetEpsilon;
 		if (context.verifier == null || !outerloopConverged) {
 			return new Result<>(Double.POSITIVE_INFINITY, strategies);

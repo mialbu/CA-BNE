@@ -58,6 +58,10 @@ public class BNESolverContext<Value, Bid> {
 	public void setSampler(BidSampler<Value, Bid> sampler) {
 		this.sampler = sampler;
 	}
+
+	/**
+	 * Constructor of BNESolver Context
+	 */
 	public BNESolverContext() {
 		rngs = new ArrayList<>(40);
 		for (int i=0; i<40; i++) {
@@ -70,18 +74,20 @@ public class BNESolverContext<Value, Bid> {
 	public void setConfig(HashMap<String, String> config) {
 		this.config = config;
 	}
-	
+
+	// This method is called immediately after the context is created
+	// and reads the configurations defined in the config file
 	public void parseConfig(String path) throws FileNotFoundException {
 		File file = new File(path);
 		Scanner input = new Scanner(file);
 		HashMap<String, String> config = new HashMap<>();
 		while (input.hasNext()) {
-			String key = input.next().toLowerCase();
-			String value = input.next().trim();
-			config.put(key, value);
+			String key = input.next().toLowerCase();  // parse all to lowercase
+			String value = input.next().trim();  // read next line
+			config.put(key, value);  // add key with value to config HashMap
 		}
 		input.close();
-		this.config = config;
+		this.config = config;  // set context config to just read config file info
 	}
 	
 	public int getIntParameter(String name) {
@@ -116,6 +122,8 @@ public class BNESolverContext<Value, Bid> {
 		return config.get(name.toLowerCase());
 	}
 
+
+	// used for reading the innerloop, outerloop and verificationstep settings - called once at start of each of these three steps
 	public void activateConfig(String prefix) {
 		// Copies everything with a given prefix to the top level. This allows toggling between different "subconfigs".
 		// e.g. with prefix="InnerLoop", InnerLoop.PatternSearch.Stepsize becomes PatternSearch.Stepsize
@@ -134,6 +142,8 @@ public class BNESolverContext<Value, Bid> {
 	public Optimizer<Value, Bid> getOptimizer() {
 		return optimizer;
 	}
+
+	// optimizer is an abstract class and refers to distinct Best Response algorithms!
 	public void setOptimizer(Optimizer<Value, Bid> optimizer) {
 		this.optimizer = optimizer;
 	}
