@@ -10,10 +10,10 @@ import java.util.Iterator;
 import java.util.List;
 
 
-public class FirstPriceLLGDensitySampler extends BidSampler<Double, Double> {
+public class FirstPriceLLDensitySampler extends BidSampler<Double, Double> {
     private DensityFunction densityFunction;
 
-    public FirstPriceLLGDensitySampler(BNESolverContext<Double, Double> context, DensityFunction densityFunction) {
+    public FirstPriceLLDensitySampler(BNESolverContext<Double, Double> context, DensityFunction densityFunction) {
         super(context);
         this.densityFunction = densityFunction;
     }

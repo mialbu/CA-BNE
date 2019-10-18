@@ -46,13 +46,13 @@ public class LLGSampler extends BidSampler<Double, Double> {
 				result[i] = b;
 				result[localopponent] = slocal.getBid(r[0] * localMax); 
 				
-				// bid of global player, ignoring the area where the global player wins, and adjusting the density
+				// bid of global player, ignoring the area where the global player wins, and adjusting the density --next step
 				// accordingly (basically importance sampling)
-				double globalbound = Math.min(b + result[localopponent], globalMax);
+				double globalbound = Math.min(b + result[localopponent], globalMax);  //wieviel muss global bidden damit gewinnt -> wir sind nur an allem drunter interessiert
 				double density = globalbound / globalMax / globalMax; // would be 1 / globalMax without importance sampling
 				result[2] = globalbound * r[1];
 				
-				return new Sample(density, result);
+				return new Sample(density, result);  // enthält bid profile und density davon
 			}
 		};
 		return it;

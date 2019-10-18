@@ -50,7 +50,8 @@ public class UnivariatePWLStrategy implements Strategy<Double, Double> {
 		intervals.put(upper, upper);
 		return new UnivariatePWLStrategy(intervals);		
 	}
-	
+
+	// TODO: What doeas lo and hi mean? (n=interval size)
 	public Double getBid(Double value) {
 		// binary search
 		int lo = 0, hi=n+1;

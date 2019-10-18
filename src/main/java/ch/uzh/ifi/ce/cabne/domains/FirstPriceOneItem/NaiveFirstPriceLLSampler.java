@@ -13,10 +13,10 @@ import java.util.List;
  * correctness of the more complex sampler.
  */
 
-public class NaiveFirstPriceLLGSampler extends BidSampler<Double, Double> {
+public class NaiveFirstPriceLLSampler extends BidSampler<Double, Double> {
 
 	
-	public NaiveFirstPriceLLGSampler(BNESolverContext<Double, Double> context) {
+	public NaiveFirstPriceLLSampler(BNESolverContext<Double, Double> context) {
 		super(context);
 	}
 
@@ -36,7 +36,7 @@ public class NaiveFirstPriceLLGSampler extends BidSampler<Double, Double> {
 				@Override
 				public Sample next() {
 					double[] r = rngiter.next();
-					Double result[] = new Double[3];
+					Double result[] = new Double[2];  // here only 2 players // LLG was 3
 					
 					// bids of local players
 					result[0] = slocal0.getBid(r[0] * slocal0.getMaxValue());
@@ -49,9 +49,9 @@ public class NaiveFirstPriceLLGSampler extends BidSampler<Double, Double> {
 			return it;
 		}
 		
-		final int localopponent = (i + 1) % 2;
+		final int opponent = (i + 1) % 2; // chooses local opponent, either i is 0 -> then localop is 1 or i is 1 then localop is 0
 		Iterator<double[]> rngiter = context.getRng(2).nextVectorIterator();
-		Strategy<Double, Double> slocal = s.get(localopponent);
+		Strategy<Double, Double> slocal = s.get(opponent);
 		UnivariatePWLStrategy sglobal = (UnivariatePWLStrategy) s.get(2);
 		double density = 1.0 / slocal.getMaxValue() / sglobal.getMaxValue();
 		
@@ -67,7 +67,7 @@ public class NaiveFirstPriceLLGSampler extends BidSampler<Double, Double> {
 				Double result[] = new Double[3];
 				
 				result[i] = b;
-				result[localopponent] = slocal.getBid(r[0] * slocal.getMaxValue()); 
+				result[opponent] = slocal.getBid(r[0] * slocal.getMaxValue());
 				result[2] = sglobal.getBid(r[1] * sglobal.getMaxValue());
 				
 				return new Sample(density, result);

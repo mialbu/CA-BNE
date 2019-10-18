@@ -65,5 +65,5 @@ def plot_BNE(path):
 
 
 for path in sys.argv[1:]:
-    main(path)
+    main(path) #takes as commandline
 
