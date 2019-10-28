@@ -16,6 +16,7 @@ import ch.uzh.ifi.ce.cabne.strategy.UnivariatePWLStrategy;
 import ch.uzh.ifi.ce.cabne.verification.BoundingVerifier1D;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -47,14 +48,14 @@ public class LLFirstPrice {
         // alle rng setzen die gebraucht werden, in 1dim ein..
         // wird für valuation gebraucht (belief ist gegeben) aber der effektive wert wird von diesen rng gezogen
         // dim davon ist wie viele zahlen braucht man um v-i darzustellen -> nicht v von allen sondern v ohne i
-		context.setRng(2, new CommonRandomGenerator(2));
+		context.setRng(1, new CommonRandomGenerator(1));
 
 		// choose an update rule for pointwise best response calculation
-        // TODO: Describe wMin, wMax and c can ignore:)
-		context.setUpdateRule(new UnivariateDampenedUpdateRule(0.2, 0.7, 0.5 / context.getDoubleParameter("epsilon"), true));
-
+		context.setUpdateRule(new UnivariateDampenedUpdateRule(0.1, 0.3, 0.5 / context.getDoubleParameter("epsilon"), true));
+	// wMax kleiner - kleinere updates macht alles smoother !!! einfach smoother updaten, dann konvergiert es besser, da sonst zu grosse schritte gemacht werden und überdas ziel hinausschiessen und deshalb folgefehler weitergenommen werden...
+	// in vallback könnte an strategy geschraubt werden, dass ecken als fehler beachtet werden.. diese ausbessern -- nur wenn sonst nichts geht
 		// choose a best response calculator (here set to adaptive pointwise linear best response
-		context.setBRC(new AdaptivePWLBRCalculator(context));  // adaptive -> Punkte werden gewichtet verteilt und nicht linear. da wo es mehr knicke hat, hat es mehr punkte
+		context.setBRC(new PWLBRCalculator(context));  // adaptive -> Punkte werden gewichtet verteilt und nicht linear. da wo es mehr knicke hat, hat es mehr punkte
 
         // choose best response calculator for outer loop -> verification step ignore - höchstens klasse tauschen 8 solange in 1dim gleiche benutzen - wenn in 2dim andere klassen
 		context.setOuterBRC(new PWLBRCalculator(context));
@@ -75,18 +76,46 @@ public class LLFirstPrice {
 		BNEAlgorithm<Double, Double> bneAlgo = new BNEAlgorithm<>(2, context); // TODO: Create instance with 2 bidders
 		
 		// add the initial strategy for the first local bidder to the BNEAlgorithm TODO: verify first player strategy to bid his exact valuation
-		bneAlgo.setInitialStrategy(0, UnivariatePWLStrategy.makeTruthful(0.0, 1.0));
+		bneAlgo.setInitialStrategy(0, UnivariatePWLStrategy.makeTruthful(0.0, 1.0)); //TODO: call constructor with initial strategy to start from expected final equilibrium!!!!!!!!!!! todo now!
 		// add the initial strategy for the global bidder to the BNEAlgorithm // TODO: delete this bidder
 		// bneAlgo.setInitialStrategy(2, UnivariatePWLStrategy.makeTruthful(0.0, 2.0)); // Third (global) bidder
         // add information about second local bidder - since symmetric - will set update strategy to False and generate same Output as the bidder it was symmetrically adjusted
-		bneAlgo.setInitialStrategy(1, UnivariatePWLStrategy.makeTruthful(0.0, 1.0)); // TODO: verify second player strategy to bid his exact valuation
+		//bneAlgo.setInitialStrategy(1, UnivariatePWLStrategy.makeTruthful(0.0, 1.0)); // TODO: verify second player strategy to bid his exact valuation
+        bneAlgo.makeBidderSymmetric(1, 0);
 
         /**********************************************************************
          * Create Callback to print out players strategies after each iteration     4/4
          * ********************************************************************/
 
+        // create callback that prints out first local player's strategy after each iteration
+        BNEAlgorithmCallback<Double, Double> callback = (iteration, type, strategies, epsilon) -> {
+            // print out strategy
+            StringBuilder builder = new StringBuilder();
+            builder.append(String.format(Locale.ENGLISH,"%2d", iteration));
+            builder.append(String.format(Locale.ENGLISH," %7.6f  ", epsilon));
 
-		// create callback that prints out the local and global players' strategies after each iteration, and also forces the strategies to be monotone
+            // cast s to UnivariatePWLStrategy to get access to underlying data structure.
+            UnivariatePWLStrategy sPWL = (UnivariatePWLStrategy) strategies.get(0);
+            for (Map.Entry<Double, Double> e : sPWL.getData().entrySet()) {  //map entry is value bid boundle
+                builder.append(String.format(Locale.ENGLISH, "%7.6f",e.getKey()));
+                builder.append(" ");
+                builder.append(String.format(Locale.ENGLISH,"%7.6f",e.getValue()));
+                builder.append("  ");
+            }
+
+            // alternatively, just sample the strategy on a regular grid.
+
+			/*for (int i=0; i<=100; i++) {
+				double v = strategies.get(0).getMaxValue() * i / ((double) 100);
+				builder.append(String.format(Locale.ENGLISH,"%7.6f",v));
+				builder.append(" ");
+				builder.append(String.format(Locale.ENGLISH,"%7.6f",strategies.get(0).getBid(v)));
+				builder.append("  ");
+			}*/
+
+            System.out.println(builder.toString());
+
+		/*// create callback that prints out the local and global players' strategies after each iteration, and also forces the strategies to be monotone
 		BNEAlgorithmCallback<Double, Double> callback = (iteration, type, strategies, epsilon) -> { // args come from bnealgo - func einfach für convenience
             // print out strategy
             StringBuilder builder = new StringBuilder();
@@ -96,7 +125,6 @@ public class LLFirstPrice {
             int ngridpoints = 1000; // TODO: figure out where this number is defined and what exactly it represents
             for (int i=0; i<=ngridpoints/2; i++) {  // first half of ngridpoints
                 double v = strategies.get(1).getMaxValue() * i / ngridpoints; // für alle llG
-                //System.out.println("v: " +  v);
                 builder.append(String.format("%5.4f",v));
                 builder.append(" ");
                 builder.append(" ");
@@ -114,26 +142,10 @@ public class LLFirstPrice {
                 builder.append(String.format("%5.4f", strategies.get(1).getBid(v)));
                 builder.append("  ");
             }
-            System.out.println(builder.toString());  // prints builder here
+            System.out.println(builder.toString());  // prints builder here*/
 
             // make the strategy monotone, so it can be inverted for importance sampling // because of importance sampling done, hängt davon ab ob invertierbar, bid muss invertiert werden damit auf resultat' - kann ich ignorieren!
             ///// raus bis
-            for (int i=0; i<2; i+=2) {
-                UnivariatePWLStrategy s = (UnivariatePWLStrategy) strategies.get(i);
-                SortedMap<Double, Double> data = s.getData();
-                SortedMap<Double, Double> newdata = new TreeMap<>();
-
-                double previousBid = 0.0;
-                for (Map.Entry<Double, Double> e : data.entrySet()) {
-                    double v = e.getKey();
-                    double bid = Math.max(previousBid + 1e-6, e.getValue());
-                    newdata.put(v, bid);
-                    previousBid = bid;
-                }
-                strategies.set(i, new UnivariatePWLStrategy(newdata));
-            }
-            strategies.set(1, strategies.get(0)); // für monoton - kann ich ignorieren
-
             //// bis hier!
         };
 		bneAlgo.setCallback(callback);

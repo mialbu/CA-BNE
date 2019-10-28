@@ -70,7 +70,7 @@ public class NaiveFirstPriceLLSampler extends BidSampler<Double, Double> {
 				result[opponent] = slocal.getBid(r[0] * slocal.getMaxValue());
 				result[2] = sglobal.getBid(r[1] * sglobal.getMaxValue());
 				
-				return new Sample(density, result);
+				return new Sample(density, result);  // density = 1/volume - wahrscheinlichkeitsdichte der verteilten punkte- global 0-2 lokal 0-1 - hier über fläche 1*2 deshalb muss density 1/2 sein
 			}
 		};
 		return it;
