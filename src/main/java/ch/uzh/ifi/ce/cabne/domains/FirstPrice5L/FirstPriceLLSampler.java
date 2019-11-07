@@ -32,7 +32,7 @@ public class FirstPriceLLSampler extends BidSampler<Double, Double> {
         // watch out: for the iterations later on, where the one player will deviate from the naive strategy - I'm not sure anymore, maybe it stays the same, since his valuation does not change, only his actual bids will change...
 
         Strategy<Double, Double> s_opponent1 = s.get(opponents_i[0]);  // s_opponent1 is strategy of 1st opponent player
-        Strategy<Double, Double> s_opponent2 = s.get(opponents_i[1]);  // s_opponent2 is strategy of 2nd  opponent player
+        Strategy<Double, Double> s_opponent2 = s.get(opponents_i[1]);  // s_opponent2 is strategy of 2nd opponent player
         Strategy<Double, Double> s_opponent3 = s.get(opponents_i[2]);  // s_opponent3 is strategy of 3rd opponent player
         Strategy<Double, Double> s_opponent4 = s.get(opponents_i[3]);  // s_opponent4 is strategy of 4th opponent player
 

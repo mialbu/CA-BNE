@@ -34,16 +34,12 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
         // in my work it will almost always be n-1, since every player is naive and has only one valuation (doesn't matter on how many goods, since the player will only place exactly one bid on the paket that contains exactly these goods!)
         // watch out: for the iterations later on, where the one player will deviate from the naive strategy - I'm not sure anymore, maybe it stays the same, since his valuation does not change, only his actual bids will change...
 
-		Strategy[] s_opponents = new Strategy[nr_players];
+		Strategy<Double, Double>[] s_opponents = new Strategy[nr_players];
 
-		for (int j : opponents_i) {
-			s_opponents[j] = s.get(opponents_i[j]);
-		}
-
-        Strategy<Double, Double> s_opponent1 = s.get(opponents_i[0]);  // s_opponent1 is strategy of 1st opponent player
-        Strategy<Double, Double> s_opponent2 = s.get(opponents_i[1]);  // s_opponent2 is strategy of 2nd  opponent player
-        Strategy<Double, Double> s_opponent3 = s.get(opponents_i[2]);  // s_opponent3 is strategy of 3rd opponent player
-        Strategy<Double, Double> s_opponent4 = s.get(opponents_i[3]);  // s_opponent4 is strategy of 4th opponent player
+		// s_opponent[1] is strategy of 2nd opponent player
+		for (int index = 0; index < opponents_i.length; index++) {
+		    s_opponents[index] = s.get(opponents_i[index]);
+        }
 
 		Iterator<Sample> it = new Iterator<Sample>() {
 			@Override
@@ -59,12 +55,20 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
 				result[i] = b;  // vector für bids - 1 pro player, welches resultat wurde gezogen
                 // density - wieviel kommts in deinen gezogenen vor vs. in der originalen verteilung
 
-				result[opponents_i[0]] = s_opponent1.getBid(r[0] * s_opponent1.getMaxValue());
-                result[opponents_i[1]] = s_opponent2.getBid(r[1] * s_opponent2.getMaxValue());
-                result[opponents_i[2]] = s_opponent3.getBid(r[2] * s_opponent3.getMaxValue());
-                result[opponents_i[3]] = s_opponent4.getBid(r[3] * s_opponent4.getMaxValue());
+                for (int index = 0; index < opponents_i.length; index++) {
+                    result[opponents_i[index]] = s_opponents[index].getBid(r[index] * s_opponents[index].getMaxValue());
+                }
 
-				return new Sample(1.0, result); // sample = klasse für  (importance sampling ist wenn verteilung abgeändert wird, so dass mc sample schneller konvergiert)
+                double size_bid_area = 0;
+                Strategy<Double, Double> current_strategy;
+                for (int player : players_nr) {
+                    current_strategy = s.get(player);
+                    size_bid_area += current_strategy.getMaxValue();
+                }
+
+                double density = 1.0 / size_bid_area;
+
+				return new Sample(density, result); // sample = klasse für  (importance sampling ist wenn verteilung abgeändert wird, so dass mc sample schneller konvergiert)
 			}
 		};
 		return it;
