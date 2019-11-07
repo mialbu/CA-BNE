@@ -4,6 +4,7 @@ import ch.uzh.ifi.ce.cabne.algorithm.BNESolverContext;
 import ch.uzh.ifi.ce.cabne.domains.BidSampler;
 import ch.uzh.ifi.ce.cabne.strategy.Strategy;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -18,7 +19,8 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
 
 	public Iterator<Sample> conditionalBidIterator(int i, Double v, Double b, List<Strategy<Double, Double>> s) {
 		
-        int players_nr[] = {0,1,2,3,4};
+        int[] players_nr = {0,1,2,3,4};
+        int nr_players = 10;
         int[] opponents_i = new int[players_nr.length - 1];
 
         for (int inc = 0, k = 0; inc < players_nr.length; inc++) {
@@ -31,6 +33,12 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
         Iterator<double[]> rngiter = context.getRng(opponents_i.length).nextVectorIterator(); // Dimension is number of valuations of all players except player i's valuations -> v-i
         // in my work it will almost always be n-1, since every player is naive and has only one valuation (doesn't matter on how many goods, since the player will only place exactly one bid on the paket that contains exactly these goods!)
         // watch out: for the iterations later on, where the one player will deviate from the naive strategy - I'm not sure anymore, maybe it stays the same, since his valuation does not change, only his actual bids will change...
+
+		Strategy[] s_opponents = new Strategy[nr_players];
+
+		for (int j : opponents_i) {
+			s_opponents[j] = s.get(opponents_i[j]);
+		}
 
         Strategy<Double, Double> s_opponent1 = s.get(opponents_i[0]);  // s_opponent1 is strategy of 1st opponent player
         Strategy<Double, Double> s_opponent2 = s.get(opponents_i[1]);  // s_opponent2 is strategy of 2nd  opponent player
