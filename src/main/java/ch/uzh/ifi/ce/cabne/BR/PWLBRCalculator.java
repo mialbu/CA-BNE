@@ -9,7 +9,7 @@ import ch.uzh.ifi.ce.cabne.pointwiseBR.Optimizer;
 import ch.uzh.ifi.ce.cabne.strategy.Strategy;
 import ch.uzh.ifi.ce.cabne.strategy.UnivariatePWLStrategy;
 
-public class PWLBRCalculator implements BRCalculator<Double, Double> {
+public class PWLBRCalculator implements BRCalculator<Double, Double> {  // set up BRCalculator<Double, Double[]> as new class
 	BNESolverContext<Double, Double> context;
 	
 
@@ -18,7 +18,7 @@ public class PWLBRCalculator implements BRCalculator<Double, Double> {
 	}
 
 
-	public Result<Double, Double> computeBR(int i, List<Strategy<Double, Double>> s) {
+	public Result<Double, Double> computeBR(int i, List<Strategy<Double, Double>> s) {  // Strategy<Double, Double[]>
 		int nPoints = Integer.parseInt(context.config.get("gridsize"));
 		
 		TreeMap<Double, Double> pointwiseBRs = new TreeMap<>();

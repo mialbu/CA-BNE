@@ -12,7 +12,7 @@ public class UnivariatePWLStrategy implements Strategy<Double, Double> {
 	boolean isAscending;
 	double maxValue;
 	
-	public UnivariatePWLStrategy(SortedMap<Double, Double> intervals) {
+	public UnivariatePWLStrategy(SortedMap<Double, Double> intervals) {  // TODO: mb directly read through output generated earlier
 		// don't use a TreeMap or anything similar for looking up the intervals.
 		// After construction, we prefer a fast static data structure, i.e. a good old sorted array.
 		// the map used to initialize is kept around so it can be recovered

@@ -16,15 +16,14 @@ import ch.uzh.ifi.ce.cabne.strategy.UnivariatePWLStrategy;
 import ch.uzh.ifi.ce.cabne.verification.BoundingVerifier1D;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 
 public class MBFirstPrice {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
+		int nr_runs = 100;
+
         /********************************
          * Create Context And Read Config   1/4
          * ******************************/
@@ -34,13 +33,19 @@ public class MBFirstPrice {
 		context.parseConfig(configfile);  // read config file infos
 
 		// Define number of players and items and probability of an item getting chosen for interest for a player
-		int nr_players = 7;
-		int nr_items = 5;
-		double prob_interest = 0.45;
+		int nr_players = 10;
+		int nr_items = 6;
+		double prob_interest = 0.3;
+		System.out.println("nr_players " + nr_players);
+		System.out.println("nr_items " + nr_items);
+		System.out.println("prob_interest " + prob_interest);
 
 		// Instantiate BundleGenerator
 		BundleGenerator bundleGenerator = new BundleGenerator(nr_players, nr_items, prob_interest);
 		HashMap<Integer, int[]> bundles = bundleGenerator.get_bundles();
+		bundles.forEach((key, value) -> {
+			System.out.println(key + " " + Arrays.toString(value));
+		});
 		// Calculate all maximal and feasible allocations
 		ArrayList<ArrayList<Integer>> max_feasible_allocations = bundleGenerator.get_max_feasible_allocs();
 
@@ -50,7 +55,7 @@ public class MBFirstPrice {
          * *******************************/
         // choose Best Response algorithm
         // (PatternSearch, UnivariateBrentSearch, UnivariateGridSearch)
-		context.setOptimizer(new PatternSearch<>(context, new UnivariatePattern()));
+		context.setOptimizer(new PatternSearch<>(context, new UnivariatePattern()));  // multivariate cross pattern für step nach verification.
 
         // MCIntegrator - used for calculation of expected utility. Always MC used!
         context.setIntegrator(new MCIntegrator<>(context));
@@ -66,6 +71,7 @@ public class MBFirstPrice {
 		// wMax kleiner - kleinere updates macht alles smoother !!! einfach smoother updaten, dann konvergiert es besser, da sonst zu grosse schritte gemacht werden und überdas ziel hinausschiessen und deshalb folgefehler weitergenommen werden...
 		// in vallback könnte an strategy geschraubt werden, dass ecken als fehler beachtet werden.. diese ausbessern -- nur wenn sonst nichts geht
 		// choose a best response calculator (here set to adaptive pointwise linear best response
+		// ws 0.15, 0.35, 0.5
 		context.setBRC(new PWLBRCalculator(context));  // adaptive -> Punkte werden gewichtet verteilt und nicht linear. da wo es mehr knicke hat, hat es mehr punkte
 
         // choose best response calculator for outer loop -> verification step ignore - höchstens klasse tauschen 8 solange in 1dim gleiche benutzen - wenn in 2dim andere klassen
@@ -80,9 +86,9 @@ public class MBFirstPrice {
 		* ***************************/
 		
 		// choose mechanism that is used for price calculation
-		context.setMechanism(new FirstPrice());
+		context.setMechanism(new FirstPrice(bundles, max_feasible_allocations));  // Call constructor of FirstPrice Mechanism with arg bundles  TODO: FirstPriceOverbidding(bundles, max_f, overbidbundle, playernr)
 		// set sampler
-		context.setSampler(new FirstPriceMBSampler(context));  // FPMBSampler uses BidIterator
+		context.setSampler(new FirstPriceMBSampler(context, nr_players));  // FPMBSampler uses BidIterator
 
         // create a BNEAlgorithm Instance with nr_players bidders and configuration
 		BNEAlgorithm<Double, Double> bneAlgo = new BNEAlgorithm<>(nr_players, context);
@@ -94,8 +100,7 @@ public class MBFirstPrice {
 			for (int val : value) {
 				max_value += val;
 			}
-			bneAlgo.setInitialStrategy(key, UnivariatePWLStrategy.makeTruthful(0.0, 0));
-			System.out.println(key + ": " + max_value);
+			bneAlgo.setInitialStrategy(key, UnivariatePWLStrategy.makeTruthful(0.0, max_value));
 		});
 
 
@@ -105,11 +110,11 @@ public class MBFirstPrice {
 
         // create callback that prints out first local player's strategy after each iteration
         BNEAlgorithmCallback<Double, Double> callback = (iteration, type, strategies, epsilon) -> {
-
+        	System.out.println(iteration  + " " + type);
         	bundles.forEach((key, value) -> {
 				// print out strategy
 				StringBuilder builder = new StringBuilder();
-				builder.append(String.format(Locale.ENGLISH,"%2d", iteration));
+				builder.append(String.format(Locale.ENGLISH,"%2d", key));
 				builder.append(String.format(Locale.ENGLISH," %7.6f  ", epsilon));
 
 				// cast s to UnivariatePWLStrategy to get access to underlying data structure.
@@ -125,7 +130,7 @@ public class MBFirstPrice {
         	System.out.println();
         };
 		bneAlgo.setCallback(callback);
-		
+
 		BNEAlgorithm.Result<Double, Double> result;
 		result = bneAlgo.run();
     }

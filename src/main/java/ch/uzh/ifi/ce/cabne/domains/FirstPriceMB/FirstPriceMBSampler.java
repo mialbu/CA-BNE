@@ -11,23 +11,27 @@ import java.util.List;
 
 public class FirstPriceMBSampler extends BidSampler<Double, Double> {
 
-	
-	public FirstPriceMBSampler(BNESolverContext<Double, Double> context) {
+	private final int nr_players;
+
+	public FirstPriceMBSampler(BNESolverContext<Double, Double> context, int nr_players) {
 		super(context);
+		this.nr_players = nr_players;
 	}
 
 
 	public Iterator<Sample> conditionalBidIterator(int i, Double v, Double b, List<Strategy<Double, Double>> s) {
-		
-        int[] players_nr = {0,1,2,3,4};
-        int nr_players = 10;
-        int[] opponents_i = new int[players_nr.length - 1];
+		// TODO: add bundles to conditionalBidIterator or Constructor, so that the nr of players can be read from that. - or just the nr of players...
+        int[] player_nrs = new int[nr_players];
+        for (int iter = 0; iter < nr_players; iter++) {
+        	player_nrs[iter] = iter;
+		}
+        int[] opponents_i = new int[player_nrs.length - 1];
 
-        for (int inc = 0, k = 0; inc < players_nr.length; inc++) {
+        for (int inc = 0, k = 0; inc < player_nrs.length; inc++) {
             if (inc == i) {
                 continue;
             }
-            opponents_i[k++] = players_nr[inc];
+            opponents_i[k++] = player_nrs[inc];
         }
 
         Iterator<double[]> rngiter = context.getRng(opponents_i.length).nextVectorIterator(); // Dimension is number of valuations of all players except player i's valuations -> v-i
@@ -48,10 +52,10 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
 			}
 
 			@Override
-			public Sample next() {	// TODO: rewrite this method for five local bidders on one single item!
+			public Sample next() {
 				double[] r = rngiter.next();
-				Double result[] = new Double[players_nr.length];
-				
+				Double result[] = new Double[player_nrs.length];
+
 				result[i] = b;  // vector für bids - 1 pro player, welches resultat wurde gezogen
                 // density - wieviel kommts in deinen gezogenen vor vs. in der originalen verteilung
 
@@ -61,7 +65,7 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
 
                 double size_bid_area = 0;
                 Strategy<Double, Double> current_strategy;
-                for (int player : players_nr) {
+                for (int player : player_nrs) {
                     current_strategy = s.get(player);
                     size_bid_area += current_strategy.getMaxValue();
                 }
