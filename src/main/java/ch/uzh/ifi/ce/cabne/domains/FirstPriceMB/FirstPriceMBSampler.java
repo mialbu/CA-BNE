@@ -34,13 +34,14 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
             opponents_i[k++] = player_nrs[inc];
         }
 
-        Iterator<double[]> rngiter = context.getRng(opponents_i.length).nextVectorIterator(); // Dimension is number of valuations of all players except player i's valuations -> v-i
-        // in my work it will almost always be n-1, since every player is naive and has only one valuation (doesn't matter on how many goods, since the player will only place exactly one bid on the paket that contains exactly these goods!)
-        // watch out: for the iterations later on, where the one player will deviate from the naive strategy - I'm not sure anymore, maybe it stays the same, since his valuation does not change, only his actual bids will change...
+		// TODO: Delete notes at end of project
+		// Dimension is number of valuations of all players except player i's valuations -> v-i
+		// in my work it will almost always be n-1, since every player is naive and has only one valuation (doesn't matter on how many goods, since the player will only place exactly one bid on the packet that contains exactly these goods!)
+		// watch out: for the iterations later on, where the one player will deviate from the naive strategy - I'm not sure anymore, maybe it stays the same, since his valuation does not change, only his actual bids will change...
+		Iterator<double[]> rngiter = context.getRng(opponents_i.length).nextVectorIterator();
 
 		Strategy<Double, Double>[] s_opponents = new Strategy[nr_players];
 
-		// s_opponent[1] is strategy of 2nd opponent player
 		for (int index = 0; index < opponents_i.length; index++) {
 		    s_opponents[index] = s.get(opponents_i[index]);
         }
@@ -72,7 +73,8 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
 
                 double density = 1.0 / size_bid_area;
 
-				return new Sample(density, result); // sample = klasse für  (importance sampling ist wenn verteilung abgeändert wird, so dass mc sample schneller konvergiert)
+				// TODO: Meeting 6: sample = class for importance sampling (when distribution changes, so that mcsample converges faster)
+				return new Sample(density, result);
 			}
 		};
 		return it;

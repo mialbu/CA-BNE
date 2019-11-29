@@ -34,7 +34,7 @@ public class FirstPriceLLDensitySampler extends BidSampler<Double, Double> {
             }
 
             @Override
-            public Sample next() {	// TODO: rewrite this method for two local bidders on one single item!
+            public Sample next() {
                 double[] r = rngiter.next();
                 Double result[] = new Double[2];
 
@@ -47,36 +47,5 @@ public class FirstPriceLLDensitySampler extends BidSampler<Double, Double> {
             }
         };
         return it;
-
-
-        /*final int localopponent = (i + 1) % 2;
-        Iterator<double[]> rngiter = context.getRng(2).nextVectorIterator();
-        Strategy<Double, Double> slocal = s.get(localopponent);
-        UnivariatePWLStrategy sglobal = (UnivariatePWLStrategy) s.get(2);
-
-        Iterator<Sample> it = new Iterator<Sample>() {
-            @Override
-            public boolean hasNext() {
-                return true;
-            }
-
-            @Override
-            public Sample next() {
-                double[] r = rngiter.next();
-                Double result[] = new Double[3];
-
-                result[i] = b;
-                result[localopponent] = slocal.getBid(r[0] * slocal.getMaxValue());
-
-                double maxglobalbid = Math.min(b + result[localopponent], sglobal.getBid(sglobal.getMaxValue()));
-                double maxglobalvalue = sglobal.invert(maxglobalbid);
-                double density = maxglobalvalue / sglobal.getMaxValue() / slocal.getMaxValue() / sglobal.getMaxValue();
-
-                result[2] = sglobal.getBid(r[1] * maxglobalvalue);
-
-                return new Sample(density, result);
-            }
-        };
-        return it;*/
     }
 }

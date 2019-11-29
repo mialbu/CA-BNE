@@ -63,20 +63,15 @@ public class BundleGenerator {
         // create bundle for each player
         for (Integer current_player = 0; current_player < nr_players; current_player++) {
             int[] current_bundle = new int[nr_items];
-            int sum;
-            do {
-                sum = 0;
-                // chose each item by the probability probability_item_chosen
-                for (int i = 0; i < nr_items; i++) {
-                    double toss = Math.random();  // toss = random between 0.0 and 1.0
-                    if (toss < probability_item_chosen) {  // item is chosen
-                        current_bundle[i] = 1;
-                    } else {  // item is not chosen
-                        current_bundle[i] = 0;
-                    }
-                    sum += current_bundle[i];
+            // chose each item by the probability probability_item_chosen
+            for (int i = 0; i < nr_items; i++) {
+                double toss = Math.random();  // toss = random between 0.0 and 1.0
+                if (toss < probability_item_chosen) {  // item is chosen
+                    current_bundle[i] = 1;
+                } else {  // item is not chosen
+                    current_bundle[i] = 0;
                 }
-            } while (sum == 0);  // if no item is of interest for a player, then the experiment just has one less player - which is not what is wanted
+            }
             bundle_dict.put(current_player, current_bundle);  // Add the bundle to the player
         }
 

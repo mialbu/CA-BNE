@@ -14,12 +14,15 @@ public class FirstPrice implements Mechanism<Double, Double> {
 	 */
 	@Override
 	public double computeUtility(int i, Double v, Double[] bids) { // i = 0 - 4 // v= 0.0-1.0 // bids=[b1,b2,b3,b4,b5]
+		// TODO: 29.11. delete notes at end of project
 		// In this mechanism, we assume that the two players bid on one item only,
 		// bids is therefore an array of length 2 and contains the bids for this one item per player.
 
 		Double maxBid = bids[0];
 		int nr_maxBids = 1;
-		for (int iter=1; iter<bids.length; iter++) {  // loop has to start at 2nd bid, since maxBid set to first bid before
+
+		// loop has to start at 2nd bid, since maxBid set to first bid before
+		for (int iter=1; iter<bids.length; iter++) {
 			if (bids[iter] > maxBid) {
 				nr_maxBids = 1;
 				maxBid = bids[iter];
