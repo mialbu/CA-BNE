@@ -43,18 +43,25 @@ public class MCIntegrator<Value, Bid> extends Integrator<Value, Bid> {
 		// TODO: this would be cleaner if it was handled by separate classes explicitly 
 		// extending Integrator<Value, Double> and Integrator<Value, Double[]>
 		if (b instanceof Double) {
+			double value = 1;
 			for (int j=0; j<strats.size(); j++) {
 				if (j==i) continue;
 				Double maxval = (Double) strats.get(j).getMaxValue();
-				result *= maxval;
+				if (maxval > 0.5) {  // mb 4.12.
+					result *= maxval;
+					value*=maxval;
+				}
 			}
+//			System.out.println(value);
 			
 		} else if (b instanceof Double[]) {
 			for (int j=0; j<strats.size(); j++) {
 				if (j==i) continue;
 				Double[] maxval = (Double[]) strats.get(j).getMaxValue();
 				for (int k=0; k<maxval.length; k++) {
-					result *= maxval[k];
+					if (maxval[k] > 0.5) {  // mb 4.12.
+						result *= maxval[k];
+					}
 				}
 			}
 			

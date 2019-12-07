@@ -5,8 +5,8 @@ package ch.uzh.ifi.ce.cabne.myexamples;
 		import ch.uzh.ifi.ce.cabne.algorithm.BNEAlgorithmCallback;
 		import ch.uzh.ifi.ce.cabne.algorithm.BNESolverContext;
 		import ch.uzh.ifi.ce.cabne.bundelgenerator.BundleGenerator;
-		import ch.uzh.ifi.ce.cabne.domains.FirstPriceMB.FirstPrice;
-		import ch.uzh.ifi.ce.cabne.domains.FirstPriceMB.FirstPriceMBSampler;
+		import ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis.FirstPrice;
+		import ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis.FirstPriceMBSampler;
 		import ch.uzh.ifi.ce.cabne.integration.MCIntegrator;
 		import ch.uzh.ifi.ce.cabne.pointwiseBR.PatternSearch;
 		import ch.uzh.ifi.ce.cabne.pointwiseBR.UnivariatePattern;
@@ -27,28 +27,73 @@ public class ThesisFirstPrice {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 
-		int nrOfRuns = 100;
+		int nrOfRuns = 10;
+		System.out.println("Total runs: " + nrOfRuns);
+
+		// Define number of players and items and probability of an item getting chosen for interest for a player
+		int nr_players = 4;
+		int nr_items = 4;
+		double prob_interest = 0.5;
+		String folder_output = "misc/scripts/4-4-3/";
+//		String folder_output = "../pass1/9-6-3/";
 
 		for (int run_nr = 0; run_nr < nrOfRuns; run_nr++) {
+			System.out.println("Starting run: " + run_nr);
 			long startTime = System.nanoTime();
+
+			// Generate name of file for logs and final strategies
+			String filename;
+			if (run_nr < 10) {
+				filename = "0" + run_nr;
+			} else if (run_nr < 100) {
+				filename = "" + run_nr;
+			} else {
+				filename = String.valueOf(run_nr);
+			}
 
 			// Create Context And Read Config file for algorithm structure
 			BNESolverContext<Double, Double> context = new BNESolverContext<>();
 			String configfile = args[0];
 			context.parseConfig(configfile);
 
-			// Define number of players and items and probability of an item getting chosen for interest for a player
-			int nr_players = 7;
-			int nr_items = 8;
-			double prob_interest = 0.4;
-			String folder_output = "pass3";
-
 			// Initialize bundles
 			BundleGenerator bundleGenerator = new BundleGenerator(nr_players, nr_items, prob_interest);
+
+			// Check if there is any interest in any item
+//			boolean hasAnyInterest = bundleGenerator.hasAnyInterest();
+//			if (!hasAnyInterest) {
+//			long endTime   = System.nanoTime();
+//			long totalTime = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime);
+//
+//			// Write information about this run to a .log file
+//			File logFile = new File( folder_output + "/" + filename + ".log");
+//			FileWriter fr = new FileWriter(logFile, true);
+//			BufferedWriter br = new BufferedWriter(fr);
+//			br.write("runtime " + totalTime + "\n");
+//			br.write("converged False" + "\n");
+//			br.write("epsilon Infinity\n");
+//			br.write("players " + nr_players  + "\n");
+//			br.write("items " + nr_items  + "\n");
+//			br.write("probability " + prob_interest  + "\n");
+//			br.write("0 allEmpty");
+//			continue;
+//			}
+
 			HashMap<Integer, int[]> bundles = bundleGenerator.get_bundles();
 			bundles.forEach((key, value) -> {
-				System.out.println(key + " " + Arrays.toString(value));
+				System.out.print(key + " ");
+				for (String item : Arrays.toString(value).split(" ")) {
+					if (item.startsWith("[")) {
+						System.out.print(item.substring(1));
+					} else if (item.endsWith("]")) {
+						System.out.print(item.substring(0,1));
+					} else {
+						System.out.print(item);
+					}
+				}
+				System.out.println();
 			});
+//			System.out.println();
 
 			// Calculate all maximal and feasible allocations
 			ArrayList<ArrayList<Integer>> max_feasible_allocations = bundleGenerator.get_max_feasible_allocs();
@@ -93,39 +138,49 @@ public class ThesisFirstPrice {
 					max_value += val;
 				}
 				bneAlgo.setInitialStrategy(key, UnivariatePWLStrategy.makeTruthful(0.0, max_value));
+				if (max_value == 0) {
+					bneAlgo.makeBidderNonUpdating(key);
+				}
 			});
 
-			// Generate name of file for logs and final strategies
-			String filename;
-			if (run_nr < 10) {
-				filename = "0" + run_nr;
-			} else if (run_nr < 100) {
-				filename = "" + run_nr;
-			} else {
-				filename = String.valueOf(run_nr);
-			}
+			File stratsFile = new File(folder_output + "/" + filename + ".strats");
+			FileWriter fr_strats = new FileWriter(stratsFile, false);
+			BufferedWriter br_strats = new BufferedWriter(fr_strats);
+			br_strats.write(String.valueOf(nr_players));
 
 			// Create Callback to print out players strategies after each iteration
 			BNEAlgorithmCallback<Double, Double> callback = (iteration, type, strategies, epsilon) -> {
-				System.out.println(iteration + " " + type);
+				try {
+					br_strats.write(String.format(Locale.ENGLISH, "%10.9f", epsilon));
+					br_strats.newLine();
+//					System.out.println(iteration + " " + type + " " + String.format(Locale.ENGLISH, "%10.9f", epsilon));
+					System.out.println(String.format(Locale.ENGLISH, "%10.9f", epsilon));
 
-				bundles.forEach((key, value) -> {
-					// Print out strategy
-					StringBuilder builder = new StringBuilder();
-					builder.append(String.format(Locale.ENGLISH, "%2d", key));
-					builder.append(String.format(Locale.ENGLISH, " %7.6f  ", epsilon));
+					bundles.forEach((key, value) -> {
+						// Print out strategy
+						StringBuilder builder = new StringBuilder();
+						builder.append(String.format(Locale.ENGLISH, "%2d", key)).append("  ");
 
-					// Cast strategy to UnivariatePWLStrategy to get access to underlying data structure
-					UnivariatePWLStrategy sPWL = (UnivariatePWLStrategy) strategies.get(key);
-					for (Map.Entry<Double, Double> e : sPWL.getData().entrySet()) {
-						builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getKey()));
-						builder.append(" ");
-						builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getValue()));
-						builder.append("  ");
-					}
-					System.out.println(builder.toString());
-				});
-				System.out.println();
+						// Cast strategy to UnivariatePWLStrategy to get access to underlying data structure
+						UnivariatePWLStrategy sPWL = (UnivariatePWLStrategy) strategies.get(key);
+						for (Map.Entry<Double, Double> e : sPWL.getData().entrySet()) {
+							builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getKey()));
+							builder.append(" ");
+							builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getValue()));
+							builder.append("  ");
+						}
+
+						try {
+							br_strats.write(builder.toString());
+							br_strats.newLine();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+//						System.out.println(builder.toString());
+					});
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			};
 			bneAlgo.setCallback(callback);
 
@@ -133,34 +188,37 @@ public class ThesisFirstPrice {
 			BNEAlgorithm.Result<Double, Double> result;
 			result = bneAlgo.run();
 
-			// Write the final strategy to a .strats file
-			File stratsFile = new File(folder_output + "/" + filename + ".strats");
-			FileWriter fr_strats = new FileWriter(stratsFile, true);
-			BufferedWriter br_strats = new BufferedWriter(fr_strats);
-			for (int inc = 0; inc <= result.equilibriumStrategies.size()-1; inc++) {
-				UnivariatePWLStrategy sPWL = (UnivariatePWLStrategy) result.equilibriumStrategies.get(inc);
-				StringBuilder builder = new StringBuilder();
-				builder.append(String.format(Locale.ENGLISH, "%2d", inc));
-				builder.append(" ");
-
-				for (Map.Entry<Double, Double> e : sPWL.getData().entrySet()) {
-					builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getKey()));
-					builder.append(" ");
-					builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getValue()));
-					builder.append("  ");
-				}
-				System.out.println(builder.toString());
-				br_strats.write(builder.toString() + "\n");
-			}
 			br_strats.close();
 			fr_strats.close();
+
+//			// Write the final strategy to a .strats file
+//			File stratsFile = new File(folder_output + "/" + filename + ".strats");
+//			FileWriter fr_strats = new FileWriter(stratsFile, true);
+//			BufferedWriter br_strats = new BufferedWriter(fr_strats);
+//			for (int inc = 0; inc <= result.equilibriumStrategies.size()-1; inc++) {
+//				UnivariatePWLStrategy sPWL = (UnivariatePWLStrategy) result.equilibriumStrategies.get(inc);
+//				StringBuilder builder = new StringBuilder();
+//				builder.append(String.format(Locale.ENGLISH, "%2d", inc));
+//				builder.append(" ");
+//
+//				for (Map.Entry<Double, Double> e : sPWL.getData().entrySet()) {
+//					builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getKey()));
+//					builder.append(" ");
+//					builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getValue()));
+//					builder.append("  ");
+//				}
+//				System.out.println(builder.toString());
+//				br_strats.write(builder.toString() + "\n");
+//			}
+//			br_strats.close();
+//			fr_strats.close();
 
 			long endTime   = System.nanoTime();
 			long totalTime = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime);
 
 			// Write information about this run to a .log file
 			File logFile = new File( folder_output + "/" + filename + ".log");
-			FileWriter fr = new FileWriter(logFile, true);
+			FileWriter fr = new FileWriter(logFile, false);
 			BufferedWriter br = new BufferedWriter(fr);
 
 			br.write("runtime " + totalTime + "\n");
@@ -176,12 +234,30 @@ public class ThesisFirstPrice {
 
 			bundles.forEach((key, value) -> {
 				try {
-					br.write("bundle" + key.toString() + " ");
-					br .write(Arrays.toString(value) + "\n");
+					br.write(key + " ");
+					for (String item : Arrays.toString(value).split(" ")) {
+						if (item.startsWith("[")) {
+							br.write(item.substring(1));
+						} else if (item.endsWith("]")) {
+							br.write(item.substring(0, 1));
+						} else {
+							br.write(item);
+						}
+					}
+					br.newLine();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			});
+
+//			bundles.forEach((key, value) -> {
+//				try {
+//					br.write("bundle" + key.toString() + " ");
+//					br .write(Arrays.toString(value) + "\n");
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//			});
 
 			br.close();
 			fr.close();

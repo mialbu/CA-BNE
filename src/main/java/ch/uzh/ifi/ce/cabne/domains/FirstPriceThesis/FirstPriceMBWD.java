@@ -1,4 +1,4 @@
-package ch.uzh.ifi.ce.cabne.domains.FirstPriceMB;
+package ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis;
 
 import java.util.ArrayList;
 import java.util.Arrays;

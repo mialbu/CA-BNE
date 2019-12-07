@@ -82,11 +82,13 @@ public class BNEAlgorithm<Value, Bid> {
 			if (canonicalBidders[i] == i && updateBidder[i]) {
 				// this is a canonical bidder whose strategy should be updated
 				BRCalculator.Result<Value, Bid> result = brc.computeBR(i, strategies);
-				Strategy<Value, Bid> s = result.br;	
-				highestEpsilon = Math.max(highestEpsilon, result.epsilonAbs);
+				Strategy<Value, Bid> s = result.br;
+				highestEpsilon = Math.max(highestEpsilon, result.epsilonAbs); // mb: if highest epsilon  is 0.000 -> all epsilons have to be 0.000 (since no negative number possible...)
+//				System.out.println(result.epsilonAbs);
 				bestResponseMap.put(i, s);
 			}
 		}
+//		System.out.println();
 
 		// update strategies in place
 		for (int i=0; i<nBidders; i++) {
@@ -142,7 +144,7 @@ public class BNEAlgorithm<Value, Bid> {
 		callbackAfterIteration(0, IterationType.INNER, strategies, highestEpsilon);
 		
 		int iteration = 1;
-		int lastOuterIteration = 1;
+		int lastOuterIteration = 1;  // mb: thats why first three iters dont go in outer loop, if target eps is reached
 		
 		while (iteration <= maxIters) {
 			// This is the outer loop. First thing we do is go into the inner loop

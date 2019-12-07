@@ -1,10 +1,9 @@
-package ch.uzh.ifi.ce.cabne.domains.FirstPriceMB;
+package ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis;
 
 
 import ch.uzh.ifi.ce.cabne.domains.Mechanism;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 
 public class FirstPrice implements Mechanism<Double, Double> {

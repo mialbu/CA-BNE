@@ -27,6 +27,7 @@ def plot_BNE(path):
 
     with open(path) as fd:
         for line in fd.readlines():
+
             iteration, time_ms, *xy = line.split()
             iteration = int(iteration)
             #time_ms = int(time_ms)

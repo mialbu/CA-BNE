@@ -1,10 +1,9 @@
-package ch.uzh.ifi.ce.cabne.domains.FirstPriceMB;
+package ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis;
 
 import ch.uzh.ifi.ce.cabne.algorithm.BNESolverContext;
 import ch.uzh.ifi.ce.cabne.domains.BidSampler;
 import ch.uzh.ifi.ce.cabne.strategy.Strategy;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -46,6 +45,16 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
 		    s_opponents[index] = s.get(opponents_i[index]);
         }
 
+		double size_bid_area = 1;
+		Strategy<Double, Double> current_strategy;
+		for (int player : player_nrs) {
+			current_strategy = s.get(player);
+			if (current_strategy.getMaxValue() > 0.5) {
+				size_bid_area = size_bid_area * current_strategy.getMaxValue();
+			}
+		}
+		final double density = 1.0 / size_bid_area;
+
 		Iterator<Sample> it = new Iterator<Sample>() {
 			@Override
 			public boolean hasNext() {
@@ -63,15 +72,6 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
                 for (int index = 0; index < opponents_i.length; index++) {
                     result[opponents_i[index]] = s_opponents[index].getBid(r[index] * s_opponents[index].getMaxValue());
                 }
-
-                double size_bid_area = 0;
-                Strategy<Double, Double> current_strategy;
-                for (int player : player_nrs) {
-                    current_strategy = s.get(player);
-                    size_bid_area += current_strategy.getMaxValue();
-                }
-
-                double density = 1.0 / size_bid_area;
 
 				// TODO: Meeting 6: sample = class for importance sampling (when distribution changes, so that mcsample converges faster)
 				return new Sample(density, result);

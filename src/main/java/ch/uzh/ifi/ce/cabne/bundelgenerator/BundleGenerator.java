@@ -6,11 +6,13 @@ import java.util.HashMap;
 public class BundleGenerator {
 
     private final HashMap<Integer, int[]> bundles;
+//    private final boolean hasAnyInterest;
     private final ArrayList<ArrayList<Integer>> max_feasible_allocs;
 
     public BundleGenerator(int nr_players, int nr_items, double probability_items) {
         HashMap<Integer, int[]> bundles = generate_bundles_evenly(nr_players, nr_items, probability_items);
         this.bundles = bundles;
+//        this.hasAnyInterest = hasAnyInterest();
         ArrayList<ArrayList<Integer>> max_feasible_allocs = calculate_max_feasible_allocs();
         this.max_feasible_allocs = max_feasible_allocs;
     }
@@ -18,6 +20,10 @@ public class BundleGenerator {
     public HashMap<Integer, int[]> get_bundles() {
         return this.bundles;
     }
+
+//    public boolean getInterest() {
+//        return this.hasAnyInterest;
+//    }
 
     public ArrayList<ArrayList<Integer>> get_max_feasible_allocs() {
         return this.max_feasible_allocs;
@@ -110,6 +116,17 @@ public class BundleGenerator {
         }
         return all_bundle_combs;
     }
+
+//    private boolean hasAnyInterest() {
+//        this.bundles.forEach((key, value) -> {
+//            for (int itemInterest : value) {
+//                if (itemInterest == 1) {
+//                    return true;  // TODO: 2.12. dont get why not working!!!
+//                }
+//            }
+//        });
+//        return false;
+//    }
 
 
     /**

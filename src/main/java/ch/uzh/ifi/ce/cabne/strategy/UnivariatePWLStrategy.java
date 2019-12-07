@@ -43,7 +43,7 @@ public class UnivariatePWLStrategy implements Strategy<Double, Double> {
 		
 		maxValue = values[n];
 	}
-	
+
 	public static UnivariatePWLStrategy makeTruthful(double lower, double upper) {
 		SortedMap<Double, Double> intervals = new TreeMap<>();
 		intervals.put(lower, lower);
