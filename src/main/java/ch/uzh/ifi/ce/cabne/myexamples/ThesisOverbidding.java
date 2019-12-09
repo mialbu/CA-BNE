@@ -30,11 +30,16 @@ public class ThesisOverbidding {
 		// TODO: mb 6.12.
 		//  -> Read log file
 		//  -> check if converged
-		//  -> if converged:
-		//  	->
+		//  -> if converged: (do while next step exists)
 		//  	-> read strategy file
+		//  	-> read first line split(" ")[0] = number of players
+		//  	-> then each entry consists of reading one line (iteration and current epsilon)
+		//  	-> and reading a line for each players current strategy
+		//  	-> when strategies of one iteration are read
+		//  		-> plot current strategies -> update plot
+		//  			-> delete current plot content
+		//  			-> plot current strategies
 		//  -> else: continue
-		//  ->
 
 
 
