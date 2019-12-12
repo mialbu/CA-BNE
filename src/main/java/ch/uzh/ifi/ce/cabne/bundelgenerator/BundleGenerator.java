@@ -12,9 +12,12 @@ public class BundleGenerator {
     public BundleGenerator(int nr_players, int nr_items, double probability_items) {
         HashMap<Integer, int[]> bundles = generate_bundles_evenly(nr_players, nr_items, probability_items);
         this.bundles = bundles;
-//        this.hasAnyInterest = hasAnyInterest();
-        ArrayList<ArrayList<Integer>> max_feasible_allocs = calculate_max_feasible_allocs();
-        this.max_feasible_allocs = max_feasible_allocs;
+        this.max_feasible_allocs = calculate_max_feasible_allocs();
+    }
+
+    public BundleGenerator(HashMap<Integer, int[]> bundles) {
+        this.bundles = bundles;
+        this.max_feasible_allocs = calculate_max_feasible_allocs();
     }
 
     public HashMap<Integer, int[]> get_bundles() {

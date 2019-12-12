@@ -61,7 +61,6 @@ def plot_bne(nr):
             data.append((xx, yy))
     fig = plt.figure(figsize=(10, 8))
 
-
     def anim_update(j):
         fig.clear()
         plt.xlim(0.0, nr_items)

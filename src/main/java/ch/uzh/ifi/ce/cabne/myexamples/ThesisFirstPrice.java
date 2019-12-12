@@ -27,14 +27,15 @@ public class ThesisFirstPrice {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 
-		int nrOfRuns = 10;
+		int nrOfRuns = 7;
+		int total_converged = 0;
 		System.out.println("Total runs: " + nrOfRuns);
 
 		// Define number of players and items and probability of an item getting chosen for interest for a player
-		int nr_players = 4;
+		int nr_players = 5;
 		int nr_items = 4;
-		double prob_interest = 0.5;
-		String folder_output = "misc/scripts/4-4-3/";
+		double prob_interest = 0.4;
+		String folder_output = "misc/scripts/5-4-4/";
 //		String folder_output = "../pass1/9-6-3/";
 
 		for (int run_nr = 0; run_nr < nrOfRuns; run_nr++) {
@@ -44,7 +45,7 @@ public class ThesisFirstPrice {
 			// Generate name of file for logs and final strategies
 			String filename;
 			if (run_nr < 10) {
-				filename = "0" + run_nr;
+				filename = "0" + (run_nr+3);
 			} else if (run_nr < 100) {
 				filename = "" + run_nr;
 			} else {
@@ -86,7 +87,7 @@ public class ThesisFirstPrice {
 					if (item.startsWith("[")) {
 						System.out.print(item.substring(1));
 					} else if (item.endsWith("]")) {
-						System.out.print(item.substring(0,1));
+						System.out.print(item.substring(0, 1));
 					} else {
 						System.out.print(item);
 					}
@@ -147,6 +148,7 @@ public class ThesisFirstPrice {
 			FileWriter fr_strats = new FileWriter(stratsFile, false);
 			BufferedWriter br_strats = new BufferedWriter(fr_strats);
 			br_strats.write(String.valueOf(nr_players));
+			br_strats.newLine();
 
 			// Create Callback to print out players strategies after each iteration
 			BNEAlgorithmCallback<Double, Double> callback = (iteration, type, strategies, epsilon) -> {
@@ -213,24 +215,24 @@ public class ThesisFirstPrice {
 //			br_strats.close();
 //			fr_strats.close();
 
-			long endTime   = System.nanoTime();
+			long endTime = System.nanoTime();
 			long totalTime = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime);
 
 			// Write information about this run to a .log file
-			File logFile = new File( folder_output + "/" + filename + ".log");
+			File logFile = new File(folder_output + "/" + filename + ".log");
 			FileWriter fr = new FileWriter(logFile, false);
 			BufferedWriter br = new BufferedWriter(fr);
 
 			br.write("runtime " + totalTime + "\n");
 			if (Double.isInfinite(result.epsilon)) {
-                br.write("converged False" + "\n");
-            } else {
-                br.write("converged True" + "\n");
-            }
+				br.write("converged False" + "\n");
+			} else {
+				br.write("converged True" + "\n");
+			}
 			br.write("epsilon " + result.epsilon + "\n");
-			br.write("players " + nr_players  + "\n");
-			br.write("items " + nr_items  + "\n");
-			br.write("probability " + prob_interest  + "\n");
+			br.write("players " + nr_players + "\n");
+			br.write("items " + nr_items + "\n");
+			br.write("probability " + prob_interest + "\n");
 
 			bundles.forEach((key, value) -> {
 				try {
@@ -250,6 +252,10 @@ public class ThesisFirstPrice {
 				}
 			});
 
+			if (Double.isFinite(result.epsilon)) {
+				total_converged++;
+			}
+
 //			bundles.forEach((key, value) -> {
 //				try {
 //					br.write("bundle" + key.toString() + " ");
@@ -268,5 +274,7 @@ public class ThesisFirstPrice {
 			// TODO: 22.11.
 			// setOptimizer -> multivariate cross pattern für step nach verification.
 		}
+		float efficiency = (float) total_converged / nrOfRuns;
+		System.out.println("total converged: " + total_converged + "/" + nrOfRuns + " -> " + efficiency + "%");
 	}
 }
