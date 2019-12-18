@@ -26,21 +26,21 @@ public class MCIntegrator<Value, Bid> extends Integrator<Value, Bid> {
 		int nsamples = context.getIntParameter("mcsamples");
 		double result = 0.0;
 		
-		Iterator<BidSampler<Value, Bid>.Sample> biditer = context.sampler.conditionalBidIterator(i, v, b, strats);
+		Iterator<BidSampler<Value, Bid>.Sample> biditer = context.sampler.conditionalBidIterator(i, v, b, strats);  // TODO 16.12.: sampler mit 2dim b coden
 		BidSampler<Value, Bid>.Sample sample;
 		
 		for (int MCsample=0; MCsample<nsamples; MCsample++) {
 			sample = biditer.next();
 			
 			// add mechanism output to total, weighted by density
-			result += sample.density * context.mechanism.computeUtility(i, v, sample.bids);
+			result += sample.density * context.mechanism.computeUtility(i, v, sample.bids);  // TODO 16.12.: mechanism mit 2dim b coden - wd...
 			if (Double.isNaN(result)) {
 				throw new RuntimeException();
 			}
 		}
 		
 		// multiply result by integration volume
-		// TODO: this would be cleaner if it was handled by separate classes explicitly 
+		// TODO: this would be cleaner if it was handled by separate classes explicitly
 		// extending Integrator<Value, Double> and Integrator<Value, Double[]>
 		if (b instanceof Double) {
 			double value = 1;

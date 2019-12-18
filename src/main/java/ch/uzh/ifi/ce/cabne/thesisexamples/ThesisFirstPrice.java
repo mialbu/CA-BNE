@@ -1,5 +1,6 @@
-package ch.uzh.ifi.ce.cabne.myexamples;
+package ch.uzh.ifi.ce.cabne.thesisexamples;
 
+		import ch.uzh.ifi.ce.cabne.BR.AdaptivePWLBRCalculator;
 		import ch.uzh.ifi.ce.cabne.BR.PWLBRCalculator;
 		import ch.uzh.ifi.ce.cabne.algorithm.BNEAlgorithm;
 		import ch.uzh.ifi.ce.cabne.algorithm.BNEAlgorithmCallback;
@@ -27,27 +28,36 @@ public class ThesisFirstPrice {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 
-		int nrOfRuns = 7;
-		int total_converged = 0;
-		System.out.println("Total runs: " + nrOfRuns);
+		String pre = args[1];
+//		String pre = String.valueOf(nr_players)
+//				+ String.valueOf(nr_items)
+//				+ String.valueOf(Math.round(prob_interest*10));
 
 		// Define number of players and items and probability of an item getting chosen for interest for a player
-		int nr_players = 5;
-		int nr_items = 4;
-		double prob_interest = 0.4;
-		String folder_output = "misc/scripts/5-4-4/";
-//		String folder_output = "../pass1/9-6-3/";
+		int nr_players = Integer.parseInt(args[2]);
+		int nr_items = Integer.parseInt(args[3]);
+		double prob_interest = Double.parseDouble(args[4]);
 
-		for (int run_nr = 0; run_nr < nrOfRuns; run_nr++) {
-			System.out.println("Starting run: " + run_nr);
+//		int nrOfRuns = 1000;
+		int startRun = Integer.parseInt(args[5]);
+		int endRun = Integer.parseInt(args[6]);
+		int nrOfRuns = endRun - startRun;
+		int total_converged = 0;
+//		System.out.println("Total runs: " + nrOfRuns);
+
+		String folder_output = pre + "/";
+//		String folder_output = "misc/scripts/" + pre + "/";
+
+		for (int run_nr = startRun; run_nr < endRun; run_nr++) {
+//			System.out.println("Starting run: " + run_nr);
 			long startTime = System.nanoTime();
 
 			// Generate name of file for logs and final strategies
 			String filename;
 			if (run_nr < 10) {
-				filename = "0" + (run_nr+3);
+				filename = "00" + (run_nr);
 			} else if (run_nr < 100) {
-				filename = "" + run_nr;
+				filename = "0" + run_nr;
 			} else {
 				filename = String.valueOf(run_nr);
 			}
@@ -81,19 +91,19 @@ public class ThesisFirstPrice {
 //			}
 
 			HashMap<Integer, int[]> bundles = bundleGenerator.get_bundles();
-			bundles.forEach((key, value) -> {
-				System.out.print(key + " ");
-				for (String item : Arrays.toString(value).split(" ")) {
-					if (item.startsWith("[")) {
-						System.out.print(item.substring(1));
-					} else if (item.endsWith("]")) {
-						System.out.print(item.substring(0, 1));
-					} else {
-						System.out.print(item);
-					}
-				}
-				System.out.println();
-			});
+//			bundles.forEach((key, value) -> {
+//				System.out.print(key + " ");
+//				for (String item : Arrays.toString(value).split(" ")) {
+//					if (item.startsWith("[")) {
+//						System.out.print(item.substring(1));
+//					} else if (item.endsWith("]")) {
+//						System.out.print(item.substring(0, 1));
+//					} else {
+//						System.out.print(item);
+//					}
+//				}
+//				System.out.println();
+//			});
 //			System.out.println();
 
 			// Calculate all maximal and feasible allocations
@@ -112,10 +122,10 @@ public class ThesisFirstPrice {
 			context.setUpdateRule(new UnivariateDampenedUpdateRule(0.2, 0.6, 0.5 / context.getDoubleParameter("epsilon"), true));
 
 			// Set best response calculator (piecewise linear best response calculator)
-			context.setBRC(new PWLBRCalculator(context));
+			context.setBRC(new AdaptivePWLBRCalculator(context));  // TODO: adaptive versuchen oder inner 160 gridsize
 
-			// choose best response calculator for outer loop  // TODO: -> ignore verification step
-			context.setOuterBRC(new PWLBRCalculator(context));
+			// choose best response calculator for outer loop
+			context.setOuterBRC(new PWLBRCalculator(context)); // gridsize 300 und 1e-3
 
 			// Set verifier to verify the result in the verification step
 			context.setVerifier(new BoundingVerifier1D(context));
@@ -123,7 +133,7 @@ public class ThesisFirstPrice {
 
 			// Initialize auction settings
 			// Choose mechanism that is used for price calculation
-			context.setMechanism(new FirstPrice(max_feasible_allocations));
+			context.setMechanism(new FirstPrice(max_feasible_allocations));  // TODO: 16.12. rewrite class - maxfeas berechnen für beide !!!muss nur utility von bbidder, der overbiddet berechnet werden
 
 			// Set mechanism sampler (FPMBSampler uses BidIterator)
 			context.setSampler(new FirstPriceMBSampler(context, nr_players));
@@ -147,8 +157,6 @@ public class ThesisFirstPrice {
 			File stratsFile = new File(folder_output + "/" + filename + ".strats");
 			FileWriter fr_strats = new FileWriter(stratsFile, false);
 			BufferedWriter br_strats = new BufferedWriter(fr_strats);
-			br_strats.write(String.valueOf(nr_players));
-			br_strats.newLine();
 
 			// Create Callback to print out players strategies after each iteration
 			BNEAlgorithmCallback<Double, Double> callback = (iteration, type, strategies, epsilon) -> {
@@ -156,7 +164,7 @@ public class ThesisFirstPrice {
 					br_strats.write(String.format(Locale.ENGLISH, "%10.9f", epsilon));
 					br_strats.newLine();
 //					System.out.println(iteration + " " + type + " " + String.format(Locale.ENGLISH, "%10.9f", epsilon));
-					System.out.println(String.format(Locale.ENGLISH, "%10.9f", epsilon));
+//					System.out.println(String.format(Locale.ENGLISH, "%10.9f", epsilon));
 
 					bundles.forEach((key, value) -> {
 						// Print out strategy
@@ -275,6 +283,6 @@ public class ThesisFirstPrice {
 			// setOptimizer -> multivariate cross pattern für step nach verification.
 		}
 		float efficiency = (float) total_converged / nrOfRuns;
-		System.out.println("total converged: " + total_converged + "/" + nrOfRuns + " -> " + efficiency + "%");
+//		System.out.println("total converged: " + total_converged + "/" + nrOfRuns + " -> " + efficiency + "%");
 	}
 }

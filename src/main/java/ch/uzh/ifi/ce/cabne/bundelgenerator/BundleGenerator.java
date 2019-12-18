@@ -70,7 +70,7 @@ public class BundleGenerator {
         HashMap<Integer, int[]> bundle_dict = new HashMap<>();  // where all bundles are stored
 
         // create bundle for each player
-        for (Integer current_player = 0; current_player < nr_players; current_player++) {
+        for (int current_player = 0; current_player < nr_players; current_player++) {
             int[] current_bundle = new int[nr_items];
             // chose each item by the probability probability_item_chosen
             for (int i = 0; i < nr_items; i++) {
@@ -84,7 +84,7 @@ public class BundleGenerator {
             bundle_dict.put(current_player, current_bundle);  // Add the bundle to the player
         }
 
-        //bundle_dict.forEach((key, value) -> System.out.println(key + ": " + Arrays.toString(value)));
+//        bundle_dict.forEach((key, value) -> System.out.println(key + ": " + Arrays.toString(value)));
         return bundle_dict;
     }
 
@@ -129,59 +129,6 @@ public class BundleGenerator {
 //            }
 //        });
 //        return false;
-//    }
-
-
-    /**
-     * Generates all feasible and maximal allocations, whereas no item can be allocated more than once and
-     * there is no player that can be added to a generated allocation and it would still be feasible (hence: maximal)
-     *
-     * @param bundles The bundles of each player in the auction
-     * @return All feasible and maximal combinations of players in an allocation
-     */
-//    public ArrayList<ArrayList<Integer>> get_max_feasible_allocs(HashMap<Integer, int[]> bundles) {
-//        int nr_players = bundles.size();
-//        ArrayList<ArrayList<Integer>> all_combinations = get_bundle_combinations(nr_players);
-//        ArrayList<ArrayList<Integer>> feasible_allocs = new ArrayList<>();
-//
-//        // all bundles from each player are of the same size
-//        final int nr_items = bundles.get(0).length;
-//
-//        // Iterate over all combinations
-//        for (ArrayList<Integer> comb : all_combinations) {  // list of all combinations of players
-//            // Each item can only be allocated once
-//            // (sum of each item over all players in this bundle <= 1) => comb is feasible
-//            // then this comb is added to feasible_allocs
-//            int feasible_items = 0;
-//
-//            for (int item = 0; item < nr_items; item++) {  // 0-4
-//                int item_interest_count = 0;
-//                for (Integer player : comb) {  // if the item is of interest for player, then add it to the count
-//                    item_interest_count += bundles.get(player)[item];  // Get players bundle and add value of current item to the count
-//                }
-//                if (item_interest_count > 1) {
-//                    break;
-//                } else {
-//                    feasible_items += 1;
-//                }
-//                if (feasible_items == nr_items) {
-//                    feasible_allocs.add(comb);
-//                }
-//            }
-//        }
-//
-//        ArrayList<ArrayList<Integer>> max_feasible_allocs = new ArrayList<>(feasible_allocs);
-//
-//        for (ArrayList<Integer> i : feasible_allocs) {
-//            for (ArrayList<Integer> j : feasible_allocs) {
-//                if (i != j) {
-//                    if (i.containsAll(j)) {  // then j is a subset of some other allocation and can be ignored!
-//                        max_feasible_allocs.remove(j);
-//                    }
-//                }
-//            }
-//        }
-//        return max_feasible_allocs;
 //    }
 
     public enum Status {

@@ -12,7 +12,7 @@ public class UnivariatePWLStrategy implements Strategy<Double, Double> {
 	boolean isAscending;
 	double maxValue;
 	
-	public UnivariatePWLStrategy(SortedMap<Double, Double> intervals) {  // TODO: mb directly read through output generated earlier
+	public UnivariatePWLStrategy(SortedMap<Double, Double> intervals) {
 		// don't use a TreeMap or anything similar for looking up the intervals.
 		// After construction, we prefer a fast static data structure, i.e. a good old sorted array.
 		// the map used to initialize is kept around so it can be recovered
@@ -50,8 +50,15 @@ public class UnivariatePWLStrategy implements Strategy<Double, Double> {
 		intervals.put(upper, upper);
 		return new UnivariatePWLStrategy(intervals);		
 	}
+	
+	public static UnivariatePWLStrategy setStrategy(double[] values, double[] bids) {
+		SortedMap<Double, Double> intervals = new TreeMap<>();
+		for (int j = 0; j < values.length; j++) {
+			intervals.put(values[j], bids[j]);
+		}
+		return new UnivariatePWLStrategy(intervals);
+	}
 
-	// TODO: What doeas lo and hi mean? (n=interval size)
 	public Double getBid(Double value) {
 		// binary search
 		int lo = 0, hi=n+1;

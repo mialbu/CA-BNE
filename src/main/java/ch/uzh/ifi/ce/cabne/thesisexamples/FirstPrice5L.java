@@ -1,4 +1,4 @@
-package ch.uzh.ifi.ce.cabne.myexamples;
+package ch.uzh.ifi.ce.cabne.thesisexamples;
 
 import ch.uzh.ifi.ce.cabne.BR.PWLBRCalculator;
 import ch.uzh.ifi.ce.cabne.algorithm.BNEAlgorithm;

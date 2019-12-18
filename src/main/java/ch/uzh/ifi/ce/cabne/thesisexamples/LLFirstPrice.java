@@ -1,6 +1,5 @@
-package ch.uzh.ifi.ce.cabne.myexamples;
+package ch.uzh.ifi.ce.cabne.thesisexamples;
 
-import ch.uzh.ifi.ce.cabne.BR.AdaptivePWLBRCalculator;
 import ch.uzh.ifi.ce.cabne.BR.PWLBRCalculator;
 import ch.uzh.ifi.ce.cabne.algorithm.BNEAlgorithm;
 import ch.uzh.ifi.ce.cabne.algorithm.BNEAlgorithmCallback;
@@ -18,8 +17,6 @@ import ch.uzh.ifi.ce.cabne.verification.BoundingVerifier1D;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 
 public class LLFirstPrice {

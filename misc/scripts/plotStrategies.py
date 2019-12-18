@@ -17,7 +17,9 @@ import time
 
 
 def plot_bne(nr):
-    folder = "5-4-4/"
+    #folder = "5-4-4/"
+    #folder = "6123/"
+    folder = "783/"
     stratsfile = folder + nr + ".strats"
     logfile = folder + nr + ".log"
     bundles = []
@@ -36,7 +38,7 @@ def plot_bne(nr):
     data = []
     nr_iters = 0
     with open(stratsfile) as fd:
-        fd.readline()
+        #fd.readline()
         for line in fd.readlines():
             if line.rstrip().split("  ")[0] == '':
                 data.append("Infinity")
@@ -90,6 +92,6 @@ def plot_bne(nr):
     plt.show()
 
 
-for i in range(2):
-   plot_bne("0" + str(i+3))
+for i in range(10):
+   plot_bne("00" + str(i))
 # plot_bne("09")
