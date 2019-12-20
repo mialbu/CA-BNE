@@ -19,7 +19,7 @@ import time
 def plot_bne(nr):
     #folder = "5-4-4/"
     #folder = "6123/"
-    folder = "783/"
+    folder = "5e3/1503/"
     stratsfile = folder + nr + ".strats"
     logfile = folder + nr + ".log"
     bundles = []

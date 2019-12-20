@@ -1,9 +1,6 @@
 package ch.uzh.ifi.ce.cabne.algorithm;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import ch.uzh.ifi.ce.cabne.BR.BRCalculator;
 import ch.uzh.ifi.ce.cabne.strategy.Strategy;
@@ -23,6 +20,8 @@ public class BNEAlgorithm<Value, Bid> {
 	public enum IterationType {INNER, OUTER, VERIFICATION};
 	
 	private int nBidders;
+	private ArrayList<Integer> playingBidders;
+	private boolean overbidding;
 	private BNESolverContext<Value, Bid> context;
 
 	Map<Integer, Strategy<Value, Bid>> initialStrategies = new HashMap<>();
@@ -35,6 +34,24 @@ public class BNEAlgorithm<Value, Bid> {
 	
 	public BNEAlgorithm(int nBidders, BNESolverContext<Value, Bid> context) {
 		this.nBidders = nBidders;
+		this.playingBidders = new ArrayList<>();
+		for (int i = 0; i < nBidders; i++) {
+			playingBidders.add(i);
+		}
+		overbidding = false;
+		canonicalBidders = new int[nBidders];
+		updateBidder = new boolean[nBidders];
+		for (int i=0; i<nBidders; i++) {
+			canonicalBidders[i] = i;
+			updateBidder[i] = true;
+		}
+		this.context = context;
+	}
+
+	public BNEAlgorithm(int nBidders, ArrayList<Integer> playingBidders, BNESolverContext<Value, Bid> context) {
+		this.nBidders = nBidders;
+		this.playingBidders = playingBidders;
+		overbidding = true;
 		canonicalBidders = new int[nBidders];
 		updateBidder = new boolean[nBidders];
 		for (int i=0; i<nBidders; i++) {
@@ -73,12 +90,12 @@ public class BNEAlgorithm<Value, Bid> {
 		}	
 	}
 	
-	private double playOneRound(List<Strategy<Value, Bid>> strategies, BRCalculator<Value, Bid> brc) {
+	private double playOneRound(List<Strategy<Value, Bid>> strategies, BRCalculator<Value, Bid> brc, ArrayList<Integer> playingBidders) {
 		double highestEpsilon = 0.0;
 		
 		// compute best responses for players where this is needed
 		Map<Integer, Strategy<Value, Bid>> bestResponseMap = new HashMap<>();
-		for (int i=0; i<nBidders; i++) {
+		for (int i : playingBidders) {
 			if (canonicalBidders[i] == i && updateBidder[i]) {
 				// this is a canonical bidder whose strategy should be updated
 				BRCalculator.Result<Value, Bid> result = brc.computeBR(i, strategies);
@@ -91,7 +108,7 @@ public class BNEAlgorithm<Value, Bid> {
 //		System.out.println();
 
 		// update strategies in place
-		for (int i=0; i<nBidders; i++) {
+		for (int i : playingBidders) {
 			if (updateBidder[i]) {
 				strategies.set(i, bestResponseMap.get(canonicalBidders[i]));
 			}
@@ -129,7 +146,12 @@ public class BNEAlgorithm<Value, Bid> {
 
 	public Result<Value, Bid> run() {
 
-		int maxIters = context.getIntParameter("maxiters");
+		int maxIters;
+		if (overbidding) {
+			maxIters = 1;
+		} else {
+			maxIters = context.getIntParameter("maxiters");
+		}
 		double targetEpsilon = context.getDoubleParameter("epsilon");
 		double highestEpsilon = Double.POSITIVE_INFINITY;
 		BRCalculator<Value, Bid> brc;
@@ -154,7 +176,7 @@ public class BNEAlgorithm<Value, Bid> {
 				brc = context.brc;
 				
 				// Note that playOneRound updates the strategies in place.
-				highestEpsilon = playOneRound(strategies, brc);
+				highestEpsilon = playOneRound(strategies, brc, playingBidders);
 				context.advanceRngs();
 				
 				callbackAfterIteration(iteration, IterationType.INNER, strategies, highestEpsilon);
@@ -177,7 +199,7 @@ public class BNEAlgorithm<Value, Bid> {
 				return new Result<>(Double.POSITIVE_INFINITY, strategies);
 			}
 			
-			highestEpsilon = playOneRound(strategies, brc);
+			highestEpsilon = playOneRound(strategies, brc, playingBidders);
 			context.advanceRngs();
 			
 			callbackAfterIteration(iteration, IterationType.OUTER, strategies, highestEpsilon);

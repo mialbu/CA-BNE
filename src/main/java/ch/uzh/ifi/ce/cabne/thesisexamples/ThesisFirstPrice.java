@@ -38,7 +38,6 @@ public class ThesisFirstPrice {
 		int nr_items = Integer.parseInt(args[3]);
 		double prob_interest = Double.parseDouble(args[4]);
 
-//		int nrOfRuns = 1000;
 		int startRun = Integer.parseInt(args[5]);
 		int endRun = Integer.parseInt(args[6]);
 		int nrOfRuns = endRun - startRun;
@@ -46,7 +45,6 @@ public class ThesisFirstPrice {
 //		System.out.println("Total runs: " + nrOfRuns);
 
 		String folder_output = pre + "/";
-//		String folder_output = "misc/scripts/" + pre + "/";
 
 		for (int run_nr = startRun; run_nr < endRun; run_nr++) {
 //			System.out.println("Starting run: " + run_nr);
@@ -70,41 +68,21 @@ public class ThesisFirstPrice {
 			// Initialize bundles
 			BundleGenerator bundleGenerator = new BundleGenerator(nr_players, nr_items, prob_interest);
 
-			// Check if there is any interest in any item
-//			boolean hasAnyInterest = bundleGenerator.hasAnyInterest();
-//			if (!hasAnyInterest) {
-//			long endTime   = System.nanoTime();
-//			long totalTime = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime);
-//
-//			// Write information about this run to a .log file
-//			File logFile = new File( folder_output + "/" + filename + ".log");
-//			FileWriter fr = new FileWriter(logFile, true);
-//			BufferedWriter br = new BufferedWriter(fr);
-//			br.write("runtime " + totalTime + "\n");
-//			br.write("converged False" + "\n");
-//			br.write("epsilon Infinity\n");
-//			br.write("players " + nr_players  + "\n");
-//			br.write("items " + nr_items  + "\n");
-//			br.write("probability " + prob_interest  + "\n");
-//			br.write("0 allEmpty");
-//			continue;
-//			}
-
 			HashMap<Integer, int[]> bundles = bundleGenerator.get_bundles();
-//			bundles.forEach((key, value) -> {
-//				System.out.print(key + " ");
-//				for (String item : Arrays.toString(value).split(" ")) {
-//					if (item.startsWith("[")) {
-//						System.out.print(item.substring(1));
-//					} else if (item.endsWith("]")) {
-//						System.out.print(item.substring(0, 1));
-//					} else {
-//						System.out.print(item);
-//					}
-//				}
-//				System.out.println();
-//			});
-//			System.out.println();
+			bundles.forEach((key, value) -> {
+				System.out.print(key + " ");
+				for (String item : Arrays.toString(value).split(" ")) {
+					if (item.startsWith("[")) {
+						System.out.print(item.substring(1));
+					} else if (item.endsWith("]")) {
+						System.out.print(item.substring(0, 1));
+					} else {
+						System.out.print(item);
+					}
+				}
+				System.out.println();
+			});
+			System.out.println();
 
 			// Calculate all maximal and feasible allocations
 			ArrayList<ArrayList<Integer>> max_feasible_allocations = bundleGenerator.get_max_feasible_allocs();
@@ -133,7 +111,7 @@ public class ThesisFirstPrice {
 
 			// Initialize auction settings
 			// Choose mechanism that is used for price calculation
-			context.setMechanism(new FirstPrice(max_feasible_allocations));  // TODO: 16.12. rewrite class - maxfeas berechnen für beide !!!muss nur utility von bbidder, der overbiddet berechnet werden
+			context.setMechanism(new FirstPrice(max_feasible_allocations));  // TODO: 16.12. rewrite class - maxfeas berechnen für beide !!!muss nur utility von bidder, der overbiddet berechnet werden
 
 			// Set mechanism sampler (FPMBSampler uses BidIterator)
 			context.setSampler(new FirstPriceMBSampler(context, nr_players));
@@ -242,16 +220,31 @@ public class ThesisFirstPrice {
 			br.write("items " + nr_items + "\n");
 			br.write("probability " + prob_interest + "\n");
 
+//			bundles.forEach((key, value) -> {
+//				try {
+//					br.write(key + " ");
+//					for (String item : Arrays.toString(value).split(" ")) {
+//						if (item.startsWith("[")) {
+//							br.write(item.substring(1));
+//						} else if (item.endsWith("]")) {
+//							br.write(item.substring(0, 1));
+//						} else {
+//							br.write(item);
+//						}
+//					}
+//					br.newLine();
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//			});
+
 			bundles.forEach((key, value) -> {
 				try {
 					br.write(key + " ");
-					for (String item : Arrays.toString(value).split(" ")) {
-						if (item.startsWith("[")) {
-							br.write(item.substring(1));
-						} else if (item.endsWith("]")) {
-							br.write(item.substring(0, 1));
-						} else {
-							br.write(item);
+					for (int iter = 0; iter < value.length; iter++) {
+						br.write(value[iter]);
+						if (iter != value.length-1) {
+							br.write(",");
 						}
 					}
 					br.newLine();
@@ -259,6 +252,22 @@ public class ThesisFirstPrice {
 					e.printStackTrace();
 				}
 			});
+
+			for (ArrayList<Integer> alloc : max_feasible_allocations) {
+				try {
+					br.write("allocations " + max_feasible_allocations.size());
+					br.newLine();
+					for (int iter = 0; iter < alloc.size(); iter++) {
+						br.write(alloc.get(iter));
+						if (iter!= alloc.size()-1) {
+							br.write(",");
+						}
+					}
+					br.newLine();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 
 			if (Double.isFinite(result.epsilon)) {
 				total_converged++;

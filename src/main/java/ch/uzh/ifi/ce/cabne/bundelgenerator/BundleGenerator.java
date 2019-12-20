@@ -1,6 +1,7 @@
 package ch.uzh.ifi.ce.cabne.bundelgenerator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class BundleGenerator {
@@ -13,20 +14,39 @@ public class BundleGenerator {
         HashMap<Integer, int[]> bundles = generate_bundles_evenly(nr_players, nr_items, probability_items);
         this.bundles = bundles;
         this.max_feasible_allocs = calculate_max_feasible_allocs();
+        cutNoInterest();
     }
 
     public BundleGenerator(HashMap<Integer, int[]> bundles) {
         this.bundles = bundles;
         this.max_feasible_allocs = calculate_max_feasible_allocs();
+        cutNoInterest();
+    }
+
+    // removes all players with no interest from max_feasible_allocs
+    private void cutNoInterest() {
+        ArrayList<Integer> noInterestBidders = new ArrayList<>();
+        bundles.forEach((key, value) -> {
+            int valsum = 0;
+            for (int val : value) {
+                valsum += val;
+            }
+            if (valsum == 0) {
+                noInterestBidders.add(key);
+            }
+        });
+        for (int noInterest : noInterestBidders) {
+            for (ArrayList<Integer> alloc : max_feasible_allocs) {
+                if (alloc.contains(noInterest)) {
+                    alloc.remove((Integer) noInterest);
+                }
+            }
+        }
     }
 
     public HashMap<Integer, int[]> get_bundles() {
         return this.bundles;
     }
-
-//    public boolean getInterest() {
-//        return this.hasAnyInterest;
-//    }
 
     public ArrayList<ArrayList<Integer>> get_max_feasible_allocs() {
         return this.max_feasible_allocs;

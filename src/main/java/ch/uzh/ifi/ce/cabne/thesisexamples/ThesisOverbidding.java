@@ -17,6 +17,7 @@ import ch.uzh.ifi.ce.cabne.verification.BoundingVerifier1D;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -33,8 +34,8 @@ public class ThesisOverbidding {
 
 		// Read log file
 		String folder_file = "misc/scripts/5-4-4/";
-		String filename = "03";
-		String testfilename = filename + "test";
+		String filename = "04";
+		String testfilename = filename + "_br";
 		File logFile = new File(folder_file + "/" + filename + ".log");
 		FileReader fr = new FileReader(logFile);
 		BufferedReader br = new BufferedReader(fr);
@@ -52,19 +53,12 @@ public class ThesisOverbidding {
 		} else {
 			// epsilon
 			Float eps = Float.parseFloat(br.readLine().split(" ")[1]);
-//			System.out.println(eps);
-
 			// number of players
 			int nr_players = Integer.parseInt(br.readLine().split(" ")[1]);
-//			System.out.println(nr_players);
-
 			// number of items
 			int nr_items = Integer.parseInt(br.readLine().split(" ")[1]);
-//			System.out.println(nr_items);
-
 			// probability
 			Float prob = Float.parseFloat(br.readLine().split(" ")[1]);
-//			System.out.println(prob);
 
 			// bundles
 			HashMap<Integer, int[]> bundles = new HashMap<>();
@@ -91,7 +85,6 @@ public class ThesisOverbidding {
 			// Calculate all maximal and feasible allocations
 			BundleGenerator bundleGenerator = new BundleGenerator(bundles);
 			ArrayList<ArrayList<Integer>> max_feasible_allocations = bundleGenerator.get_max_feasible_allocs();
-			max_feasible_allocations.forEach(System.out::println);
 
 			// Initialize all algorithm pieces (PatternSearch, UnivariateBrentSearch, UnivariateGridSearch)
 			context.setOptimizer(new PatternSearch<>(context, new UnivariatePattern()));
@@ -128,7 +121,9 @@ public class ThesisOverbidding {
 			context.setSampler(new FirstPriceMBSampler(context, nr_players));
 
 			// Create a BNEAlgorithm instance with number of bidders and configuration
-			BNEAlgorithm<Double, Double> bneAlgo = new BNEAlgorithm<>(nr_players, context);
+			ArrayList<Integer> playingBidders = new ArrayList<>();
+			playingBidders.add(0);
+			BNEAlgorithm<Double, Double> bneAlgo = new BNEAlgorithm<>(nr_players, playingBidders, context);
 
 			// TODO 15dez: for each player read line with strategy (here just one row to test)
 			File stratFile = new File(folder_file + "/" + filename + ".strats");
