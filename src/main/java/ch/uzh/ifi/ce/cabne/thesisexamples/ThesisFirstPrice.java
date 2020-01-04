@@ -26,6 +26,10 @@ package ch.uzh.ifi.ce.cabne.thesisexamples;
 
 public class ThesisFirstPrice {
 
+	private void bne() {
+
+	}
+
 	public static void main(String[] args) throws InterruptedException, IOException {
 
 		String pre = args[1];
