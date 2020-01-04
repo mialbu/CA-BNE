@@ -1,23 +1,28 @@
 package ch.uzh.ifi.ce.cabne.thesisexamples;
 
-import ch.uzh.ifi.ce.cabne.BR.PWLBRCalculator;
-import ch.uzh.ifi.ce.cabne.algorithm.BNEAlgorithm;
+import ch.uzh.ifi.ce.cabne.BR.BRCalculator;
+import ch.uzh.ifi.ce.cabne.BR.PWLOverbiddingBRCalculator;
+import ch.uzh.ifi.ce.cabne.BR.PWLSimpleBRCalculator;
 import ch.uzh.ifi.ce.cabne.algorithm.BNEAlgorithmCallback;
 import ch.uzh.ifi.ce.cabne.algorithm.BNESolverContext;
 import ch.uzh.ifi.ce.cabne.bundelgenerator.BundleGenerator;
 import ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis.FirstPrice;
-import ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis.FirstPriceMBSampler;
+import ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis.FirstPriceOverbidding;
+import ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis.FirstPriceOverbiddingSampler;
+import ch.uzh.ifi.ce.cabne.domains.FirstPriceThesis.FirstPriceSampler;
 import ch.uzh.ifi.ce.cabne.integration.MCIntegrator;
+import ch.uzh.ifi.ce.cabne.pointwiseBR.BoxPattern2D;
 import ch.uzh.ifi.ce.cabne.pointwiseBR.PatternSearch;
 import ch.uzh.ifi.ce.cabne.pointwiseBR.UnivariatePattern;
-import ch.uzh.ifi.ce.cabne.pointwiseBR.updateRule.UnivariateDampenedUpdateRule;
+import ch.uzh.ifi.ce.cabne.pointwiseBR.updateRule.DirectUpdateRule;
+import ch.uzh.ifi.ce.cabne.pointwiseBR.updateRule.DirectUpdateRuleOverbidding;
 import ch.uzh.ifi.ce.cabne.randomsampling.CommonRandomGenerator;
+import ch.uzh.ifi.ce.cabne.strategy.Strategy;
+import ch.uzh.ifi.ce.cabne.strategy.UnivariatePWLOverbiddingStrategy;
 import ch.uzh.ifi.ce.cabne.strategy.UnivariatePWLStrategy;
-import ch.uzh.ifi.ce.cabne.verification.BoundingVerifier1D;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -28,115 +33,101 @@ public class ThesisOverbidding {
 		long startTime = System.nanoTime();
 
 		// Create Context And Read Config file for algorithm structure
-		BNESolverContext<Double, Double> context = new BNESolverContext<>();
+		BNESolverContext<Double, Double> contextSimple = new BNESolverContext<>();
+		BNESolverContext<Double, Double[]> contextOverbidding = new BNESolverContext<>();
 		String configfile = args[0];
-		context.parseConfig(configfile);
+		String simple = args[1];
+		String overbidding = args[2];
+		contextSimple.parseConfig(configfile);
+		contextOverbidding.parseConfig(configfile);
 
+		// FILE READ
 		// Read log file
-		String folder_file = "misc/scripts/5-4-4/";
-		String filename = "04";
-		String testfilename = filename + "_br";
-		File logFile = new File(folder_file + "/" + filename + ".log");
+		String folder = "misc/scripts/jan02start/";
+		String filename = "000";
+		String simpleBRFilename = filename + ".simpleBRstrats";
+		String simpleBROutputFile = folder + simpleBRFilename;
+		String overbiddingBRFilename = filename + ".overbiddingStrats";
+		String overbiddingBROutputFile = folder + overbiddingBRFilename;
+
+		File logFile = new File(folder + "/" + filename + ".log");
 		FileReader fr = new FileReader(logFile);
 		BufferedReader br = new BufferedReader(fr);
 
-		// runtime
 		int runtime = Integer.parseInt(br.readLine().split(" ")[1]);
-		System.out.println(runtime);
-
-		// converged (boolean)
 		boolean converged = Boolean.parseBoolean(br.readLine().split(" ")[1]);
-		System.out.println(converged);
 
 		if (!converged) {
 			System.out.println("##### Auction did not converge! #####");
+			//continue;
 		} else {
-			// epsilon
 			Float eps = Float.parseFloat(br.readLine().split(" ")[1]);
-			// number of players
-			int nr_players = Integer.parseInt(br.readLine().split(" ")[1]);
-			// number of items
-			int nr_items = Integer.parseInt(br.readLine().split(" ")[1]);
-			// probability
+			int nrPlayers = Integer.parseInt(br.readLine().split(" ")[1]);
+			int nrItems = Integer.parseInt(br.readLine().split(" ")[1]);
 			Float prob = Float.parseFloat(br.readLine().split(" ")[1]);
 
-			// bundles
 			HashMap<Integer, int[]> bundles = new HashMap<>();
-			for (int pls = 0; pls < nr_players; pls++) {
+			for (int pls = 0; pls < nrPlayers; pls++) {
 				String currentLine = br.readLine();
 				Integer curPl = Integer.parseInt(currentLine.split(" ")[0]);
-				int[] curIts = new int[nr_items];
-				for (int its = 0; its < nr_items; its++) {
+				int[] curIts = new int[nrItems];
+				for (int its = 0; its < nrItems; its++) {
 					curIts[its] = Integer.parseInt(currentLine.split(" ")[1].split(",")[its]);
 				}
 				bundles.put(curPl, curIts);
 			}
 
-			// TODO 15dez: add player with parent bundle of current player
-
 			bundles.forEach((key, value) -> {
 				System.out.print(key + ": ");
-				for (int item : value) {
-					System.out.print(item);
+				for (int val : value) {
+					System.out.print(val);
 				}
 				System.out.println();
 			});
 
-			// Calculate all maximal and feasible allocations
+			br.close();
+			fr.close();
+
 			BundleGenerator bundleGenerator = new BundleGenerator(bundles);
-			ArrayList<ArrayList<Integer>> max_feasible_allocations = bundleGenerator.get_max_feasible_allocs();
+			ArrayList<ArrayList<Integer>> maxFeasibleAllocations = bundleGenerator.getMaxFeasibleAllocations();
 
-			// Initialize all algorithm pieces (PatternSearch, UnivariateBrentSearch, UnivariateGridSearch)
-			context.setOptimizer(new PatternSearch<>(context, new UnivariatePattern()));
+			contextSimple.setOptimizer(new PatternSearch<>(contextSimple, new UnivariatePattern()));
+			contextOverbidding.setOptimizer(new PatternSearch<>(contextOverbidding, new BoxPattern2D()));
 
-			// Set Integrator used for calculation of expected utility
-			context.setIntegrator(new MCIntegrator<>(context));
+			contextSimple.setIntegrator(new MCIntegrator<>(contextSimple));
+			contextOverbidding.setIntegrator(new MCIntegrator<>(contextOverbidding));
 
-			// TODO 15dez: with additional bundle -> dim = nr_players?
-			// Set a random number generator (at this auction each player only bids on his one bundle)
-			context.setRng(nr_players - 1, new CommonRandomGenerator(nr_players - 1));
+			contextSimple.setRng(nrPlayers - 1, new CommonRandomGenerator(nrPlayers - 1));
+			contextOverbidding.setRng(nrPlayers - 1, new CommonRandomGenerator(nrPlayers - 1));  // todo: what rng?
 
-			// Set an update rule for pointwise best response calculation
-			context.setUpdateRule(new UnivariateDampenedUpdateRule(0.2, 0.6, 0.5 / context.getDoubleParameter("epsilon"), true));
+			contextSimple.setUpdateRule(new DirectUpdateRule());
+			contextOverbidding.setUpdateRule(new DirectUpdateRuleOverbidding());
 
-			// Set best response calculator (piecewise linear best response calculator)
-			context.setBRC(new PWLBRCalculator(context));
+//			contextSimple.setBRC(new PWLSimpleBRCalculator(contextSimple, ""));
+//			contextSimple.setVerifier(new BoundingVerifier1D(contextSimple));
+//			contextOverbidding.setVerifier(new BoundingVerifier1D(contextOverbidding));
 
-			// choose best response calculator for outer loop
-			context.setOuterBRC(new PWLBRCalculator(context));
+			contextSimple.setMechanism(new FirstPrice(maxFeasibleAllocations));
+			contextOverbidding.setMechanism(new FirstPriceOverbidding(maxFeasibleAllocations));
 
-			// Set verifier to verify the result in the verification step
-			context.setVerifier(new BoundingVerifier1D(context));
+			contextSimple.setSampler(new FirstPriceSampler(contextSimple, nrPlayers));
+			contextOverbidding.setSampler(new FirstPriceOverbiddingSampler(contextOverbidding, nrPlayers));
 
-			// TODO: for each additional possible bundle a bidder may bid on
-			//  -> calc feas allocs and set everything about the auction up and run a two-dimensional best response optimization
-			//  -> Trying to find out if the expected utility of this new BR is higher than the one before.
-			// TODO: Do I have to calculate the expected utility of the former auction
+//			contextOverbidding.setBRC(new PWLOverbiddingBRCalculator(contextOverbidding, "a.testingob182"));  // outputfile will be set for each auction
 
-			// Initialize auction settings
-			// Choose mechanism that is used for price calculation
-			context.setMechanism(new FirstPrice(max_feasible_allocations));
+			Map<Integer, Strategy<Double, Double>> eqSimpleStrats = new HashMap<>();
+			Map<Integer, Strategy<Double, Double[]>> eqArrayStrats = new HashMap<>();
+//			boolean[] updateBidder = new boolean[nrPlayers];
 
-			// Set mechanism sampler (FPMBSampler uses BidIterator)
-			context.setSampler(new FirstPriceMBSampler(context, nr_players));
-
-			// Create a BNEAlgorithm instance with number of bidders and configuration
-			ArrayList<Integer> playingBidders = new ArrayList<>();
-			playingBidders.add(0);
-			BNEAlgorithm<Double, Double> bneAlgo = new BNEAlgorithm<>(nr_players, playingBidders, context);
-
-			// TODO 15dez: for each player read line with strategy (here just one row to test)
-			File stratFile = new File(folder_file + "/" + filename + ".strats");
+			// READ EQULIBRIUM STRATEGIES
+			File stratFile = new File(folder + "/" + filename + ".eqStrats");
 			FileReader sr = new FileReader(stratFile);
 			BufferedReader sbr = new BufferedReader(sr);
-
 			sbr.readLine();
 
-			for (int pl = 0; pl < nr_players; pl++) {
+			for (int pl = 0; pl < nrPlayers; pl++) {
 				String line = sbr.readLine();
 				int currentPlayer = Integer.parseInt(String.valueOf(line.split("  ")[0].charAt(1)));
-				System.out.println(currentPlayer);
-//				System.out.println("#" + line.split("  ")[0].charAt(1) + "#");
 				String[] valbids = line.split("  ");
 				valbids = ArrayUtils.remove(valbids, 0);
 				int nr_steps = valbids.length;
@@ -146,116 +137,173 @@ public class ThesisOverbidding {
 					steps[incr] = Double.parseDouble(valbids[incr].split(" ")[0]);
 					bids[incr] = Double.parseDouble(valbids[incr].split(" ")[1]);
 				}
-//			for (int i= 0; i<steps.length;i++) {
-//				System.out.print(steps[i]);
-//				System.out.print(": ");
-//				System.out.println(bids[i]);
-//			}
-
-				// Add the initial strategy for the first local bidder to the BNEAlgorithm
-				// lower is always 0.0 / upper is k (nr of items that are of interest)
-				// TODO 10dez: set initial strategy to equilibrium strategy read from .strats file
-				// steps.length == bids.length -> otherwise it does not work
-				bneAlgo.setInitialStrategy(currentPlayer, UnivariatePWLStrategy.setStrategy(steps, bids));
+				eqSimpleStrats.put(pl, UnivariatePWLStrategy.setStrategy(steps, bids));
+				eqArrayStrats.put(pl, UnivariatePWLOverbiddingStrategy.setStrategy(false, steps, bids));  // todo: check how overbidding=false occurs -> is it correct?
 			}
-				//TODO:####################################################################################################
-				File stratsFile = new File(folder_file + "/" + testfilename + ".strats");
-				FileWriter fr_strats = new FileWriter(stratsFile, false);
-				BufferedWriter br_strats = new BufferedWriter(fr_strats);
 
-				// Create Callback to print out players strategies after each iteration
-				BNEAlgorithmCallback<Double, Double> callback = (iteration, type, strategies, epsilon) -> {
-					try {
-						br_strats.write(String.format(Locale.ENGLISH, "%10.9f", epsilon));
-						br_strats.newLine();
-//					System.out.println(iteration + " " + type + " " + String.format(Locale.ENGLISH, "%10.9f", epsilon));
-						System.out.println(String.format(Locale.ENGLISH, "%10.9f", epsilon));
+			File brStratFile = new File(simpleBROutputFile);
+			FileWriter fileWriter = new FileWriter(brStratFile, false);
+			BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+			bufferedWriter.write("Simple Best Response On Equilibrium");
+			bufferedWriter.newLine();
+			bufferedWriter.close();
+			fileWriter.close();
 
-						bundles.forEach((key, value) -> {
-							// Print out strategy
-							StringBuilder builder = new StringBuilder();
-							builder.append(String.format(Locale.ENGLISH, "%2d", key)).append("  ");
-
-							// Cast strategy to UnivariatePWLStrategy to get access to underlying data structure
-							UnivariatePWLStrategy sPWL = (UnivariatePWLStrategy) strategies.get(key);
-							for (Map.Entry<Double, Double> e : sPWL.getData().entrySet()) {
-								builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getKey()));
-								builder.append(" ");
-								builder.append(String.format(Locale.ENGLISH, "%7.6f", e.getValue()));
-								builder.append("  ");
-							}
-
-							try {
-								br_strats.write(builder.toString());
-								br_strats.newLine();
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-//						System.out.println(builder.toString());
-						});
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				};
-				bneAlgo.setCallback(callback);
-
-				// Run the bne algorithm
-				BNEAlgorithm.Result<Double, Double> result;
-				result = bneAlgo.run();
-
-				br_strats.close();
-				fr_strats.close();
-				// TODO:#####################################################################################################
-			long endTime = System.nanoTime();
-			long totalTime = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime);
-
-			// Write information about this run to a .log file
-			File testLogFile = new File(folder_file + "/" + testfilename + ".log");
-			FileWriter testfr = new FileWriter(testLogFile, false);
-			BufferedWriter testbr = new BufferedWriter(testfr);
-
-			testbr.write("runtime " + totalTime + "\n");
-			if (Double.isInfinite(result.epsilon)) {
-				testbr.write("converged False" + "\n");
-			} else {
-				testbr.write("converged True" + "\n");
+			// RUN CALCULATION OF SIMPLE BEST RESPONSE FOR ALL BIDDERS
+			// create list of strategies
+			List<Strategy<Double, Double>> eqSimpleStratsList = new ArrayList<>();
+			for (int i = 0; i < nrPlayers; i++) {
+				eqSimpleStratsList.add(eqSimpleStrats.get(i));  //get(canonicalBidders[i])
 			}
-			testbr.write("epsilon " + result.epsilon + "\n");
-			testbr.write("players " + nr_players + "\n");
-			testbr.write("items " + nr_items + "\n");
+			List<Strategy<Double, Double[]>> eqArrayStratsList = new ArrayList<>();
+			for (int i = 0; i < nrPlayers; i++) {
+				eqArrayStratsList.add(eqArrayStrats.get(i));  //get(canonicalBidders[i])
+			}
 
-			bundles.forEach((key, value) -> {
-				try {
-					testbr.write(key + " ");
-					for (String item : Arrays.toString(value).split(" ")) {
-						if (item.startsWith("[")) {
-							testbr.write(item.substring(1));
-						} else if (item.endsWith("]")) {
-							testbr.write(item.substring(0, 1));
-						} else {
-							testbr.write(item);
+			contextSimple.activateConfig("verificationstep");
+//			contextSimple.advanceRngs();
+			int gridsize = contextSimple.getIntParameter("gridsize");
+
+			if (simple.equals("1")) {
+				PWLSimpleBRCalculator brcSimple = new PWLSimpleBRCalculator(contextSimple, simpleBROutputFile);
+
+				// compute best response for overbidding player
+				for (int curB = 0; curB < nrPlayers; curB++) {
+					PWLSimpleBRCalculator.Result<Double, Double> brResult = brcSimple.computeBR(curB, eqSimpleStratsList);
+					//double highestEpsilon = result.epsilonAbs;
+				}
+			}
+
+			if (overbidding.equals("1")) {
+				// RUN OVERBIDDING OF PLAYINGBIDDER for each overbidding bundle - write out overbidding bundle and utility and on the second line the strategy with 2-dim bids
+				int overbiddingBidder = 2;
+
+				// Calculate all maximal and feasible allocations
+				HashMap<Integer, int[]> oBundles = new HashMap<>();
+				oBundles = bundleGenerator.generateParentBundles(bundles.get(overbiddingBidder));
+
+				// key: maximal feasible allocations - value: overbidding bundles with the same maxFeasAllocs
+				// now the best response only has to be calculated for each entry in this hashmap instead of all parentBundles!
+				HashMap<ArrayList<ArrayList<Integer>>, ArrayList<int[]>> oMaxFeasibleAllocations = new HashMap<>();
+
+				boolean curMaxFeasAdded;
+				for (Map.Entry<Integer, int[]> entry : oBundles.entrySet()) {
+					Integer key = entry.getKey();
+					int[] value = entry.getValue();
+
+					ArrayList<ArrayList<Integer>> curMaxFeas = bundleGenerator.calculateOverbiddingMaxFeasibleAllocs(overbiddingBidder, value);
+					curMaxFeasAdded = false;
+					for (Map.Entry<ArrayList<ArrayList<Integer>>, ArrayList<int[]>> e : oMaxFeasibleAllocations.entrySet()) {
+						ArrayList<ArrayList<Integer>> k = e.getKey();
+						ArrayList<int[]> v = e.getValue();
+
+						if (k.containsAll(curMaxFeas) && curMaxFeas.containsAll(k)) {
+							ArrayList<int[]> cBundles = new ArrayList<>();
+							cBundles = v;
+							cBundles.add(value);
+							oMaxFeasibleAllocations.put(k, cBundles);
+							curMaxFeasAdded = true;
+							break;
 						}
 					}
-					testbr.newLine();
-				} catch (IOException e) {
-					e.printStackTrace();
+					if (!curMaxFeasAdded) {
+						ArrayList<int[]> listToAdd = new ArrayList<>();
+						listToAdd.add(value);
+						oMaxFeasibleAllocations.put(curMaxFeas, listToAdd);
+					}
 				}
-			});
+				System.out.println(1);
 
-//			bundles.forEach((key, value) -> {
-//				try {
-//					br.write("bundle" + key.toString() + " ");
-//					br .write(Arrays.toString(value) + "\n");
-//				} catch (IOException e) {
-//					e.printStackTrace();
+//				oMaxFeasibleAllocations.forEach((k, v) -> {
+//
+//				});
+
+
+
+
+
+				// foreach obundle calculate omaxfeasallocs
+				// save the obundle and save the omaxfeasallocs
+				// if for any future obundle, the same omaxfeasallocs have already been calculated
+				// add this bundle to the list of the recent bundle
+				// for those two bundles, the best response has only once to be calculated!
+
+//				HashMap<Integer, ArrayList<ArrayList<Integer>>> oMaxFeasibleAllocations = new HashMap<>();
+//				HashMap<Integer, ArrayList<int[]>> oBundleMap = new HashMap<>();
+				// generate all parent bundles and add them to this map
+
+
+
+
+				int oMaxCount = 0;
+//				for (Map.Entry<Integer, int[]> entry : oBundles.entrySet()) {
+//					Integer k = entry.getKey();
+//					int[] v = entry.getValue();
+//
+//					// for each bundle calculate maxfeas
+//					ArrayList<ArrayList<Integer>> curMaxFeas = bundleGenerator.calculateOverbiddingMaxFeasibleAllocs(overbiddingBidder, v);
+
+//					if (oMaxFeasibleAllocations.containsValue(curMaxFeas)) {
+//
+//					} else {
+//						// add this alloc to the omaxfeasMap
+//						oMaxFeasibleAllocations.put(oMaxCount, curMaxFeas);
+//						oBundleSet.put(oMaxCount, v);
+//						oMaxCount += 1;
+//					}
+//
+//					oMaxFeasibleAllocations.put(0, curMaxFeas);
 //				}
-//			});
+//
+//				// for each key in omaxfeasallocs run the br
+//				oMaxFeasibleAllocations.forEach((key, value) -> {
+//				});
+//
+//
+//
+//				oMaxFeasibleAllocations =
+//						bundleGenerator.calculateOverbiddingMaxFeasibleAllocs(overbiddingBidder, overbiddingBundle);
+//
+//				HashMap<Integer, ArrayList<ArrayList<Integer>>> oAllocs = new HashMap<>();
+//				boolean t = true;
+//
+//				if (t) {
+//					oAllocs.put(0, oMaxFeasibleAllocations);
+//				}
+//				for (int oRun=0; oRun<oAllocs.size(); oRun++) {
+//					overbiddingBundle = oAllocs.get(oRun).get(0);
+//				}
 
-			br.close();
-			fr.close();
+
+
+
+
+
+
+
+				// Initialize all algorithm pieces (PatternSearch, UnivariateBrentSearch, UnivariateGridSearch)
+				contextOverbidding.setOptimizer(new PatternSearch<>(contextOverbidding, new BoxPattern2D()));
+				// TODO 15dez: with additional bundle -> dim = nrPlayers?
+				// Set a random number generator (at this auction each player only bids on his one bundle)
+				contextOverbidding.setRng(nrPlayers, new CommonRandomGenerator(nrPlayers));
+
+				// TODO: for each additional possible bundle a bidder may bid on
+				//  -> calc feas allocs and set everything about the auction up and run a two-dimensional best response optimization
+				//  -> Trying to find out if the expected utility of this new BR is higher than the one before.
+
+				contextOverbidding.activateConfig("verificationstep");
+				gridsize = contextOverbidding.getIntParameter("gridsize");
+				//context.advanceRNgs();
+				PWLOverbiddingBRCalculator brcOverbidding = new PWLOverbiddingBRCalculator(contextOverbidding, overbiddingBROutputFile);
+
+				// compute best response for overbidding player
+				BRCalculator.Result<Double, Double[]> overbiddingResult = brcOverbidding.computeBR(overbiddingBidder, eqArrayStratsList);
+				Strategy<Double, Double[]> overbiddingBR = overbiddingResult.br;
+
+				long endTime = System.nanoTime();
+				long totalTime = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime);
 			}
-
-
+		}
 
 			// TODO: mb 6.12.
 			//  -> Read log file
@@ -270,5 +318,6 @@ public class ThesisOverbidding {
 			//  			-> delete current plot content
 			//  			-> plot current strategies
 			//  -> else: continue
+
 	}
 }
