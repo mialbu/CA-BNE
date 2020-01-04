@@ -1,5 +1,6 @@
 package ch.uzh.ifi.ce.cabne.BR;
 
+import java.io.IOException;
 import java.util.List;
 
 import ch.uzh.ifi.ce.cabne.strategy.Strategy;
@@ -16,6 +17,6 @@ public interface BRCalculator<Value, Bid> {
 		}
 	}
 
-	Result<Value, Bid> computeBR(int i, List<Strategy<Value, Bid>> s);
+	Result<Value, Bid> computeBR(int i, List<Strategy<Value, Bid>> s) throws IOException;
 	
 }

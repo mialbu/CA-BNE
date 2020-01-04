@@ -7,19 +7,18 @@ import ch.uzh.ifi.ce.cabne.strategy.Strategy;
 import java.util.Iterator;
 import java.util.List;
 
-
-public class FirstPriceMBSampler extends BidSampler<Double, Double> {
+// TODO FINAL: change result double[][] calc correctly
+public class FirstPriceOverbiddingSampler extends BidSampler<Double, Double[]> {
 
 	private final int nr_players;
 
-	public FirstPriceMBSampler(BNESolverContext<Double, Double> context, int nr_players) {
+	public FirstPriceOverbiddingSampler(BNESolverContext<Double, Double[]> context, int nr_players) {
 		super(context);
 		this.nr_players = nr_players;
 	}
 
 
 	public Iterator<Sample> conditionalBidIterator(int i, Double v, Double b, List<Strategy<Double, Double>> s) {
-		// TODO: add bundles to conditionalBidIterator or Constructor, so that the nr of players can be read from that. - or just the nr of players...
         int[] player_nrs = new int[nr_players];
         for (int iter = 0; iter < nr_players; iter++) {
         	player_nrs[iter] = iter;
@@ -33,7 +32,6 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
             opponents_i[k++] = player_nrs[inc];
         }
 
-		// TODO: Delete notes at end of project
 		// Dimension is number of valuations of all players except player i's valuations -> v-i
 		// in my work it will almost always be n-1, since every player is naive and has only one valuation (doesn't matter on how many goods, since the player will only place exactly one bid on the packet that contains exactly these goods!)
 		// watch out: for the iterations later on, where the one player will deviate from the naive strategy - I'm not sure anymore, maybe it stays the same, since his valuation does not change, only his actual bids will change...
@@ -64,19 +62,24 @@ public class FirstPriceMBSampler extends BidSampler<Double, Double> {
 			@Override
 			public Sample next() {
 				double[] r = rngiter.next();
-				Double result[] = new Double[player_nrs.length];
+				Double result[][] = new Double[10][player_nrs.length];
 
-				result[i] = b;  // vector für bids - 1 pro player, welches resultat wurde gezogen
+				result[i][0] = b;  // vector für bids - 1 pro player, welches resultat wurde gezogen
                 // density - wieviel kommts in deinen gezogenen vor vs. in der originalen verteilung
 
                 for (int index = 0; index < opponents_i.length; index++) {
-                    result[opponents_i[index]] = s_opponents[index].getBid(r[index] * s_opponents[index].getMaxValue());
+                    result[opponents_i[index]][0] = s_opponents[index].getBid(r[index] * s_opponents[index].getMaxValue());
                 }
 
-				// TODO: Meeting 6: sample = class for importance sampling (when distribution changes, so that mcsample converges faster)
+				// Meeting 6: sample = class for importance sampling (when distribution changes, so that mcsample converges faster)
 				return new Sample(density, result);
 			}
 		};
 		return it;
+	}
+
+	@Override
+	public Iterator<Sample> conditionalBidIterator(int i, Double v, Double[] b, List<Strategy<Double, Double[]>> s) {
+		return null;
 	}
 }

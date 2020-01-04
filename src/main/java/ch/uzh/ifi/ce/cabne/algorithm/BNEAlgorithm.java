@@ -1,5 +1,7 @@
 package ch.uzh.ifi.ce.cabne.algorithm;
 
+import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.*;
 
 import ch.uzh.ifi.ce.cabne.BR.BRCalculator;
@@ -89,8 +91,35 @@ public class BNEAlgorithm<Value, Bid> {
 			callback.afterIteration(iteration, type, strategies, epsilon);
 		}	
 	}
+
+	private double calculateBROfPlayingBidders(List<Strategy<Value, Bid>> strategies, BRCalculator<Value, Bid> brc, ArrayList<Integer> playingBidders) throws IOException {
+		double highestEpsilon = 0.0;
+		int gridsize = context.getIntParameter("gridsize");
+
+		// compute best responses for players where this is needed
+		Map<Integer, Strategy<Value, Bid>> bestResponseMap = new HashMap<>();
+		for (int i : playingBidders) {
+			if (canonicalBidders[i] == i && updateBidder[i]) {
+				// this is a canonical bidder whose strategy should be updated
+				BRCalculator.Result<Value, Bid> result = brc.computeBR(i, strategies);
+				Strategy<Value, Bid> s = result.br;
+				highestEpsilon = Math.max(highestEpsilon, result.epsilonAbs); // mb: if highest epsilon  is 0.000 -> all epsilons have to be 0.000 (since no negative number possible...)
+//				System.out.println(result.epsilonAbs);
+				bestResponseMap.put(i, s);
+			}
+		}
+//		System.out.println();
+
+		// update strategies in place
+		for (int i : playingBidders) {
+			if (updateBidder[i]) {
+				strategies.set(i, bestResponseMap.get(canonicalBidders[i]));
+			}
+		}
+		return highestEpsilon;
+	}
 	
-	private double playOneRound(List<Strategy<Value, Bid>> strategies, BRCalculator<Value, Bid> brc, ArrayList<Integer> playingBidders) {
+	private double playOneRound(List<Strategy<Value, Bid>> strategies, BRCalculator<Value, Bid> brc, ArrayList<Integer> playingBidders) throws IOException {
 		double highestEpsilon = 0.0;
 		
 		// compute best responses for players where this is needed
@@ -144,14 +173,9 @@ public class BNEAlgorithm<Value, Bid> {
 		return new Result<>(highestEpsilon, sConverted);
 	}
 
-	public Result<Value, Bid> run() {
+	public Result<Value, Bid> run() throws IOException {
 
-		int maxIters;
-		if (overbidding) {
-			maxIters = 1;
-		} else {
-			maxIters = context.getIntParameter("maxiters");
-		}
+		int maxIters = context.getIntParameter("maxiters");
 		double targetEpsilon = context.getDoubleParameter("epsilon");
 		double highestEpsilon = Double.POSITIVE_INFINITY;
 		BRCalculator<Value, Bid> brc;
@@ -161,12 +185,22 @@ public class BNEAlgorithm<Value, Bid> {
 		for (int i=0; i<nBidders; i++) {
 			strategies.add(initialStrategies.get(canonicalBidders[i]));
 		}
-		
+
 		context.activateConfig("innerloop"); // this allows the callback to assume some config is always active.
+
+//		if (overbidding) {
+//			context.activateConfig("verification");
+//			callbackAfterIteration(0, IterationType.VERIFICATION, strategies, highestEpsilon);
+//
+//			Result<Value, Bid> result = verify(strategies, context.verifier, playingBidders);
+//			callbackAfterIteration(0, IterationType.VERIFICATION, result.equilibriumStrategies, result.epsilon);
+//			return result;
+//		}
+
 		callbackAfterIteration(0, IterationType.INNER, strategies, highestEpsilon);
-		
+
 		int iteration = 1;
-		int lastOuterIteration = 1;  // mb: thats why first three iters dont go in outer loop, if target eps is reached
+		int lastOuterIteration = 1;
 		
 		while (iteration <= maxIters) {
 			// This is the outer loop. First thing we do is go into the inner loop
@@ -176,6 +210,9 @@ public class BNEAlgorithm<Value, Bid> {
 				brc = context.brc;
 				
 				// Note that playOneRound updates the strategies in place.
+				if (overbidding) {
+					break;
+				}
 				highestEpsilon = playOneRound(strategies, brc, playingBidders);
 				context.advanceRngs();
 				
@@ -198,7 +235,11 @@ public class BNEAlgorithm<Value, Bid> {
 			if (brc == null) {
 				return new Result<>(Double.POSITIVE_INFINITY, strategies);
 			}
-			
+
+			if (overbidding) {
+				context.advanceRngs();
+				break;
+			}
 			highestEpsilon = playOneRound(strategies, brc, playingBidders);
 			context.advanceRngs();
 			
@@ -210,9 +251,16 @@ public class BNEAlgorithm<Value, Bid> {
 			}
 		}
 
+
 		context.activateConfig("verificationstep");  // verification configs activated
+		
+		if (overbidding) {
+			brc = context.outerBRC;
+			highestEpsilon = calculateBROfPlayingBidders(strategies, brc, playingBidders);  // no callback here - only after verification step
+		}
+
 		boolean outerloopConverged = highestEpsilon <= targetEpsilon;
-		if (context.verifier == null || !outerloopConverged) {
+		if ((context.verifier == null || !outerloopConverged)) {
 			return new Result<>(Double.POSITIVE_INFINITY, strategies);
 		}
 		Result<Value, Bid> result = verify(strategies, context.verifier);

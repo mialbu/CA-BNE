@@ -5,7 +5,7 @@ import java.util.TreeMap;
 
 // single-dimensional piecewise linear strategy
 
-public class UnivariatePWLStrategy implements Strategy<Double, Double> {
+public class UnivariatePWLStrategy implements Strategy<Double, Double> {  // todo: create new class that implements Strategy<Double, Double[]>???
 	double[] values, bids;
 	SortedMap<Double, Double> data;
 	int n;
@@ -74,7 +74,6 @@ public class UnivariatePWLStrategy implements Strategy<Double, Double> {
 		double floor = values[lo];
 		double ceiling = values[hi];
 		
-		// TODO this shouldn't be needed or should it?
 		if (n==2) return value;
         
         double weight = (value - floor) / (ceiling - floor);
