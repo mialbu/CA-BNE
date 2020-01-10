@@ -4,5 +4,5 @@ public interface Strategy<Value, Bid> {
 	
 	Bid getBid(Value v);
 	
-	Value getMaxValue();
+	Bid getMaxValue();  // changed this to Bid, since I use Single Value and Multiple Bids...
 }

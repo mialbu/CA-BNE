@@ -7,22 +7,36 @@ public class BundleGenerator {
 
     private final HashMap<Integer, int[]> bundles;
 
-    private final ArrayList<ArrayList<Integer>> maxFeasibleAllocations;
+    private ArrayList<ArrayList<Integer>> maxFeasibleAllocations;
     private final int overbiddingKey = 6;
 
-    public BundleGenerator(int nr_players, int nr_items, double probability_items) {
-        this.bundles = generateBundlesEvenly(nr_players, nr_items, probability_items);
+    /**
+     * Constructor for the auction setup.
+     *
+     * @param nrPlayers The number of bidders.
+     * @param nrItems The number of items.
+     * @param probabilityItems The probability for each item to be of interest for a bidder.
+     */
+    public BundleGenerator(int nrPlayers, int nrItems, double probabilityItems) {
+        this.bundles = generateBundlesEvenly(nrPlayers, nrItems, probabilityItems);
         this.maxFeasibleAllocations = calculateMaxFeasibleAllocations();
         cutNoInterestBidders();
     }
 
-    public BundleGenerator(HashMap<Integer, int[]> bundles) {
+    /**
+     * Constructor if the bundles are already known.
+     *
+     * @param bundles All bundles mapped to their bidder.
+     */
+    public BundleGenerator(HashMap<Integer, int[]> bundles, ArrayList<ArrayList<Integer>> maxFeas) {
         this.bundles = bundles;
-        this.maxFeasibleAllocations = calculateMaxFeasibleAllocations();
+        this.maxFeasibleAllocations = maxFeas;
         cutNoInterestBidders();
     }
 
-    // removes all players with no interest from max_feasible_allocs
+    /**
+     * Removes all bidders with no interest at all from maxFeasibleAllocs
+     */
     private void cutNoInterestBidders() {
         ArrayList<Integer> noInterestBidders = new ArrayList<>();
         bundles.forEach((key, value) -> {
@@ -43,166 +57,176 @@ public class BundleGenerator {
         }
     }
 
-    public HashMap<Integer, int[]> getBundles() {
-        return this.bundles;
-    }
-
-    public ArrayList<ArrayList<Integer>> getMaxFeasibleAllocations() {
-        return this.maxFeasibleAllocations;
-    }
-
     /**
      * Generates a List of all opponents of a player
      *
-     * @param player     The player considered
-     * @param nr_players The number of players in the auction
+     * @param player The player considered
+     * @param nrPlayers The number of players in the auction
      * @return A List of all players, except the player considered
      */
-    public static ArrayList<Integer> get_opponents(int player, int nr_players) {
-        ArrayList<Integer> all_players = new ArrayList<>();
-        for (int i = 0; i < nr_players; i++) {
-            all_players.add(i);
+    public static ArrayList<Integer> getOpponents(int player, int nrPlayers) {
+        ArrayList<Integer> allPlayers = new ArrayList<>();
+        for (int i = 0; i < nrPlayers; i++) {
+            allPlayers.add(i);
         }
-        //int[] opponents_i = new int[all_players.size() - 1];
         ArrayList<Integer> opponents_i = new ArrayList<>();
 
-        for (int i = 0, k = 0; i < all_players.size(); i++) {
+        for (int i = 0, k = 0; i < allPlayers.size(); i++) {
             if (i == player - 1) {
                 continue;
             }
-            //opponents_i[k++] = all_players.get(i);
-            opponents_i.add(all_players.get(i));
+            opponents_i.add(allPlayers.get(i));
         }
         return opponents_i;
     }
 
-
     /**
      * Generates bundles for all players that contains each item available by a probability.
      *
-     * @param nr_players              The number of players in the auction
-     * @param nr_items                The number of items that are available in the auction
-     * @param probability_item_chosen The probability for each item to be in the bundle of a player
+     * @param nrPlayers The number of players in the auction.
+     * @param nrItems The number of items that are available in the auction.
+     * @param probabilityItemChosen The probability for each item to be in the bundle of a player.
      */
-    public HashMap<Integer, int[]> generateBundlesEvenly(int nr_players, int nr_items, double probability_item_chosen) {
-        HashMap<Integer, int[]> bundle_dict = new HashMap<>();  // where all bundles are stored
+    public HashMap<Integer, int[]> generateBundlesEvenly(int nrPlayers, int nrItems, double probabilityItemChosen) {
+        HashMap<Integer, int[]> bundleDict = new HashMap<>();  // where all bundles are stored
 
-        // create bundle for each player
-        for (int current_player = 0; current_player < nr_players; current_player++) {
-            int[] current_bundle = new int[nr_items];
-            // chose each item by the probability probability_item_chosen
-            for (int i = 0; i < nr_items; i++) {
-                double toss = Math.random();  // toss = random between 0.0 and 1.0
-                if (toss < probability_item_chosen) {  // item is chosen
-                    current_bundle[i] = 1;
+        // Create a bundle for each player
+        for (int currentPlayer = 0; currentPlayer < nrPlayers; currentPlayer++) {
+            int[] currentBundle = new int[nrItems];
+            // Chose each item by the probability probabilityItemChosen
+            for (int i = 0; i < nrItems; i++) {
+                double toss = Math.random();
+                if (toss < probabilityItemChosen) {
+                    currentBundle[i] = 1;
                 } else {  // item is not chosen
-                    current_bundle[i] = 0;
+                    currentBundle[i] = 0;
                 }
             }
-            bundle_dict.put(current_player, current_bundle);  // Add the bundle to the player
+            bundleDict.put(currentPlayer, currentBundle);  // Add the bundle to the player
         }
 
-//        bundle_dict.forEach((key, value) -> System.out.println(key + ": " + Arrays.toString(value)));
-        return bundle_dict;
+        return bundleDict;
     }
 
-
     /**
-     * Generates all distinct combination of all players (2^n-1 possibilities)
+     * Generates all distinct combination of all players (2^(n-1) possibilities)
      *
-     * @param nr_players The number of players in the auction
-     * @return All 2^-1 distinct combinations of all players
+     * @param nrPlayers The number of players in the auction
+     * @return All 2^(n-1) distinct combinations of all players
      */
-    private static ArrayList<ArrayList<Integer>> getBundleCombinations(int nr_players) {
+    private static ArrayList<ArrayList<Integer>> getBundleCombinations(int nrPlayers) {
         // Create Array that contains all players (numerated)
-        Integer[] arr = new Integer[nr_players];
-        for (int i = 0; i < nr_players; i++) {
+        Integer[] arr = new Integer[nrPlayers];
+        for (int i = 0; i < nrPlayers; i++) {
             arr[i] = i;
         }
 
         // Set N as # of all possible distinct combinations of all players
-        int N = (int) Math.pow(2d, nr_players);
-        ArrayList<ArrayList<Integer>> all_bundle_combs = new ArrayList<ArrayList<Integer>>();
+        int N = (int) Math.pow(2d, nrPlayers);
+        ArrayList<ArrayList<Integer>> allBundleCombs = new ArrayList<ArrayList<Integer>>();
 
         // Iterate over all binary codes and for each create an ArrayList
         for (int i = 1; i < N; i++) {
             ArrayList<Integer> currentList = new ArrayList<>();
             String code = Integer.toBinaryString(N | i).substring(1);
-            for (int j = 0; j < nr_players; j++) {
+            for (int j = 0; j < nrPlayers; j++) {
                 if (code.charAt(j) == '1') {
                     currentList.add(arr[j]);
                 }
             }
-            all_bundle_combs.add(currentList);
+            allBundleCombs.add(currentList);
         }
-        return all_bundle_combs;
+
+        return allBundleCombs;
     }
 
+    /**
+     * Status for the processing of the lattice.
+     */
     public enum Status {
         maximal,
-        not_processed,
+        notProcessed,
         processed
     }
 
+    /**
+     * Checks if in the allocation comb no item is allocated more than once.
+     *
+     * @param comb The combination of winning bidders.
+     * @return True if every item is not allocated more than once.
+     */
     private boolean checkFeasible(ArrayList<Integer> comb) {
-        int nr_items = bundles.get(0).length;
-        int feasible_items = 0;
+        int nrItems = bundles.get(0).length;
+        int feasibleItems = 0;
 
-        for (int item = 0; item < nr_items; item++) {
-            int item_interest_count = 0;
+        for (int item = 0; item < nrItems; item++) {
+            int itemInterestCount = 0;
             for (Integer player : comb) {  // if the item is of interest for player, then add it to the count
-                item_interest_count += bundles.get(player)[item];  // Get players bundle and add value of current item to the count
+                itemInterestCount += bundles.get(player)[item];  // Get players bundle and add value of current item to the count
             }
-            if (item_interest_count > 1) {
+            if (itemInterestCount > 1) {
                 return false;
             } else {
-                feasible_items += 1;
+                feasibleItems += 1;
             }
         }
-        return feasible_items == nr_items;
+        return feasibleItems == nrItems;
     }
 
+    /**
+     * Calculates all maximal feasible allocation.
+     *
+     * @return All maximal feasible allocations.
+     */
     private ArrayList<ArrayList<Integer>> calculateMaxFeasibleAllocations() {
-        int nr_players = bundles.size();
-        ArrayList<ArrayList<Integer>> feasible_allocs = new ArrayList<>();
-        ArrayList<ArrayList<Integer>> combs = getBundleCombinations(nr_players);
+        int nrPlayers = bundles.size();
+        ArrayList<ArrayList<Integer>> feasibleAllocs = new ArrayList<>();
+        ArrayList<ArrayList<Integer>> combs = getBundleCombinations(nrPlayers);
 
-        // initialize length map - to iterate through
-        HashMap<Integer, ArrayList<ArrayList<Integer>>> length_map = new HashMap<>();
-        for (int iter = 1; iter <= nr_players; iter++) {
-            length_map.put(iter, new ArrayList<>());
+        // initialize lengthMap to iterate through later
+        HashMap<Integer, ArrayList<ArrayList<Integer>>> lengthMap = new HashMap<>();
+        for (int iter = 1; iter <= nrPlayers; iter++) {
+            lengthMap.put(iter, new ArrayList<>());
         }
 
-        // initialize status_map - setting all status to not_processed
-        HashMap<ArrayList<Integer>, Status> status_map = new HashMap<>();
+        // initialize statusMap by setting all status to notProcessed
+        HashMap<ArrayList<Integer>, Status> statusMap = new HashMap<>();
         for (ArrayList<Integer> comb : combs) {
-            status_map.put(comb, Status.not_processed);
-            length_map.get(comb.size()).add(comb);
+            statusMap.put(comb, Status.notProcessed);
+            lengthMap.get(comb.size()).add(comb);
         }
 
         // iterate over all lengths from largest to lowest
-        for (int iter = nr_players; iter > 0; iter--) {
-            int length_size = length_map.get(iter).size();
-            for (ArrayList<Integer> current_comb : length_map.get(iter)) {
-                if (status_map.get(current_comb) == Status.not_processed) {
-                    if (checkFeasible(current_comb)) {  // test if feasible | if not, set processed/if feasible, set maximal and set all from its lattice to processed
-                        feasible_allocs.add(current_comb);
-                        status_map.put(current_comb, Status.maximal);
-                        processDownwardsLattice(current_comb, status_map);
+        for (int iter = nrPlayers; iter > 0; iter--) {
+            int lengthSize = lengthMap.get(iter).size();
+            for (ArrayList<Integer> currentComb : lengthMap.get(iter)) {
+                if (statusMap.get(currentComb) == Status.notProcessed) {
+                    if (checkFeasible(currentComb)) {  // test if feasible | if not, set processed/if feasible, set maximal and set all from its lattice to processed
+                        feasibleAllocs.add(currentComb);
+                        statusMap.put(currentComb, Status.maximal);
+                        processDownwardsLattice(currentComb, statusMap);
                     } else {
-                        status_map.put(current_comb, Status.processed);
+                        statusMap.put(currentComb, Status.processed);
                     }
                 } else {
-                    length_size -= 1;
-                    if (length_size == 0) {
-                        return feasible_allocs;
+                    lengthSize -= 1;
+                    if (lengthSize == 0) {
+                        return feasibleAllocs;
                     }
                 }
             }
         }
-        return feasible_allocs;
+        return feasibleAllocs;
     }
 
+    /**
+     * Calculates maximal feasible allocations that are added to the current maximal feasible allocations
+     * if the overbidding bundle is added to the auction.
+     *
+     * @param oBidder The current overbidding Bidder.
+     * @param oBundle The bundle the bidder potentially places a bid on.
+     * @return A list of maximal feasible allocations additionally generated by the overbidding bundle.
+     */
     // checks for each maxfeasalloc if overbidder is in current alloc, if yes -> make new array, remove overbidder, add overbidderkey (for bundlehashmap), then check if this is feasible, if yes add it to overbiddignmaxfeasallocs
     // if none is feasible add plain overbidderkey to overbiddingmaxfeasibleallocs
     public ArrayList<ArrayList<Integer>> calculateOverbiddingMaxFeasibleAllocs(int oBidder, int[] oBundle) {
@@ -228,31 +252,46 @@ public class BundleGenerator {
     }
 
     // precondition - all allocations are ordered from lowest to highest number (e.g. [4,2] not possible -> must be [2,4])
+
+    /**
+     * Checks from top to bottom all allocations for feasibility and maximality. As soon as a feasible allocation is found
+     * all its subsets are illegal, since they cannot be maximal. Terminates as soon as there is no allocation that has
+     * not been processed.
+     *
+     * @param comb
+     * @param map The map containing all allocations with their initial status notProcessed
+     */
     private static void processDownwardsLattice(ArrayList<Integer> comb, HashMap<ArrayList<Integer>, Status> map) {
         int sum = comb.size();
 
-        ArrayList<String> lower_ = new ArrayList<>();
+        ArrayList<String> lower = new ArrayList<>();
         if (sum > 1) {
-            lower_ = generateBins(sum);
+            lower = generateBins(sum);
         }
 
         // replace ones with each substring to create children in hypercube
-        for (String i : lower_) {
+        for (String i : lower) {
             int incr = 0;
-            ArrayList<Integer> current_bundle = new ArrayList<>();
+            ArrayList<Integer> currentBundle = new ArrayList<>();
             // iterate over binary code - within: replace 1s with substrings
-            for (int pl_in_alloc = 0; pl_in_alloc < sum; pl_in_alloc++) {
-                if (Integer.parseInt(String.valueOf(i.charAt(incr))) == 1) {  // iterate 0 to sum-1 - get i.charAt(iterate) -> if 1 then add the iterate-th nr in the comb_code to the current_bundle
-                    current_bundle.add(comb.get(incr));
+            for (int playersInAlloc = 0; playersInAlloc < sum; playersInAlloc++) {
+                if (Integer.parseInt(String.valueOf(i.charAt(incr))) == 1) {  // iterate 0 to sum-1 - get i.charAt(iterate) -> if 1 then add the iterate-th nr in the comb_code to the currentBundle
+                    currentBundle.add(comb.get(incr));
                 }
                 incr += 1;
             }
-            map.put(current_bundle, Status.processed);
+            map.put(currentBundle, Status.processed);
         }
     }
 
+    /**
+     * Generates all distinct binary strings of length size.
+     *
+     * @param size The length of the binary strings
+     * @return A list of binary strings
+     */
     private static ArrayList<String> generateBins(int size) {
-        // Set N as # of all possible distinct combinations of all players
+        // Set N as number of all possible distinct combinations of all players
         int N = (int) Math.pow(2d, size);
 
         // Iterate over all binary codes and for each create an ArrayList
@@ -266,6 +305,12 @@ public class BundleGenerator {
         return res;
     }
 
+    /**
+     * Generates all bundles for which the parameter bundle is a subset of.
+     *
+     * @param bundle The base bundle
+     * @return A HashMap containing all supersets of bundle.
+     */
     public HashMap<Integer, int[]> generateParentBundles(int[] bundle) {
         HashMap<Integer, int[]> parentBundles = new HashMap<>();
         int nrItems = bundle.length;
@@ -297,5 +342,13 @@ public class BundleGenerator {
         }
         parentBundles.put(nrBundle, fullBundle);
         return parentBundles;
+    }
+
+    public HashMap<Integer, int[]> getBundles() {
+        return this.bundles;
+    }
+
+    public ArrayList<ArrayList<Integer>> getMaxFeasibleAllocations() {
+        return this.maxFeasibleAllocations;
     }
 }

@@ -15,8 +15,7 @@ import ch.uzh.ifi.ce.cabne.strategy.UnivariatePWLStrategy;
 
 public class PWLBRCalculator implements BRCalculator<Double, Double> {
 	BNESolverContext<Double, Double> context;
-	// todo irgendwie utility übergeben!!!
-	
+
 
 	public PWLBRCalculator(BNESolverContext<Double, Double> context) {
 		this.context = context;
@@ -36,11 +35,11 @@ public class PWLBRCalculator implements BRCalculator<Double, Double> {
 			double v = maxValue * ((double) j) / (nPoints);
 			Double oldbid = s.get(i).getBid(v);
 			Optimizer.Result<Double> result = context.optimizer.findBR(i, v, oldbid, s);
-			epsilonAbs = Math.max(epsilonAbs, UtilityHelpers.absoluteLoss(result.oldutility, result.utility));  // utility in string builder und dann ausschreiben
+			epsilonAbs = Math.max(epsilonAbs, UtilityHelpers.absoluteLoss(result.oldutility, result.utility));
 			epsilonRel = Math.max(epsilonRel, UtilityHelpers.relativeLoss(result.oldutility, result.utility));
 						
 			Double newbid = context.updateRule.update(v, oldbid, result.bid, result.oldutility, result.utility);
-			pointwiseBRs.put(v,  newbid);			
+			pointwiseBRs.put(v,  newbid);
 		}
 
 		return new Result<Double, Double>(new UnivariatePWLStrategy(pointwiseBRs), epsilonAbs, epsilonRel);

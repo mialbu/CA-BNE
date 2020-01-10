@@ -26,12 +26,7 @@ package ch.uzh.ifi.ce.cabne.thesisexamples;
 
 public class ThesisFirstPrice {
 
-	private void bne() {
-
-	}
-
 	public static void main(String[] args) throws InterruptedException, IOException {
-
 		String pre = args[1];
 
 		// Define number of players and items and probability of an item getting chosen for interest for a player
@@ -42,24 +37,10 @@ public class ThesisFirstPrice {
 		int startRun = Integer.parseInt(args[4]);
 		int endRun = Integer.parseInt(args[5]);
 		int nrOfRuns = endRun - startRun;
-		int total_converged = 0;
-//		System.out.println("Total runs: " + nrOfRuns);
 
 		String folder_output = pre + "/";
 
-//		int[] runagainbcnotconverged = new int[]{9, 12, 58, 71, 76, 146, 159, 241, 255, 285, 298, 349, 371, 375, 390, 394, 424, 429, 439, 451, 490, 491, 494, 496, 531, 537, 542, 558, 563, 571, 572, 589, 596, 614, 616, 618, 621, 655, 696, 698, 728, 730, 735, 774, 778, 793, 830, 839, 848, 877, 882, 910, 939, 940, 963, 970, 974, 980, 990, 992};
-//		int[] todoRuns = new int[endRun-startRun];
-//		int incr = 0;
-//		for (int r=startRun; r<endRun;r++) {
-//			todoRuns[incr] = runagainbcnotconverged[r];
-//			incr++;
-//		}
-//		System.out.println(runagainbcnotconverged.length);
-
-//		for (int run_nr : todoRuns) {
 		for (int run_nr = startRun; run_nr < endRun; run_nr++) {
-//			System.out.println("Starting run: " + run_nr);
-
 				long startTime = System.nanoTime();
 
 				// Generate name of file for logs and final strategies
@@ -114,10 +95,10 @@ public class ThesisFirstPrice {
 				context.setUpdateRule(new UnivariateDampenedUpdateRule(0.2, 0.6, 0.5 / context.getDoubleParameter("epsilon"), true));
 
 				// Set best response calculator (piecewise linear best response calculator)
-				context.setBRC(new AdaptivePWLBRCalculator(context));  // TODO: adaptive versuchen oder inner 160 gridsize
+				context.setBRC(new AdaptivePWLBRCalculator(context));
 
 				// choose best response calculator for outer loop
-				context.setOuterBRC(new PWLBRCalculator(context)); // gridsize 300 und 1e-3
+				context.setOuterBRC(new PWLBRCalculator(context));
 
 				// Set verifier to verify the result in the verification step
 				context.setVerifier(new BoundingVerifier1D(context));
@@ -125,7 +106,7 @@ public class ThesisFirstPrice {
 
 				// Initialize auction settings
 				// Choose mechanism that is used for price calculation
-				context.setMechanism(new FirstPrice(max_feasible_allocations));  // TODO: 16.12. rewrite class - maxfeas berechnen für beide !!!muss nur utility von bidder, der overbiddet berechnet werden
+				context.setMechanism(new FirstPrice(max_feasible_allocations));
 
 				// Set mechanism sampler (FPMBSampler uses BidIterator)
 				context.setSampler(new FirstPriceSampler(context, nrPlayers));
@@ -155,8 +136,6 @@ public class ThesisFirstPrice {
 					try {
 						br_strats.write(String.format(Locale.ENGLISH, "%10.9f", epsilon));
 						br_strats.newLine();
-//						System.out.println(iteration + " " + type + " " + String.format(Locale.ENGLISH, "%10.9f", epsilon));
-//						System.out.println(String.format(Locale.ENGLISH, "%10.9f", epsilon));
 
 						bundles.forEach((key, value) -> {
 							// Print out strategy
@@ -178,7 +157,6 @@ public class ThesisFirstPrice {
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
-//							System.out.println(builder.toString());
 						});
 					} catch (IOException e) {
 						e.printStackTrace();
@@ -244,8 +222,44 @@ public class ThesisFirstPrice {
 				}
 
 				if (Double.isFinite(result.epsilon)) {
-					total_converged++;
 					hasConverged = true;
+				} else {
+					File notFile = new File(folder_output + "/" + args[4] + "notConverged.txt");
+					FileWriter notfr = new FileWriter(notFile, true);
+					BufferedWriter notbr = new BufferedWriter(notfr);
+					bundles.forEach((key, value) -> {
+						try {
+							notbr.write(key + " ");
+							for (String curItem : Arrays.toString(value).split(" ")) {
+								if (curItem.startsWith("[")) {
+									notbr.write(curItem.substring(1));
+								} else if (curItem.endsWith("]")) {
+									notbr.write(curItem.substring(0, 1));
+								} else {
+									notbr.write(curItem);
+								}
+							}
+							notbr.newLine();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					});
+
+					try {
+						notbr.write("allocations " + max_feasible_allocations.size());
+						notbr.newLine();
+						for (ArrayList<Integer> allocs : max_feasible_allocations) {
+							for (Integer alloc : allocs) {
+								notbr.write(String.valueOf(alloc));
+							}
+							notbr.newLine();
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					notbr.newLine();
+					notbr.close();
+					notfr.close();
 				}
 
 				br.close();

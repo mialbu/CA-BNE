@@ -30,7 +30,6 @@ public class PWLSimpleBRCalculator implements BRCalculator<Double, Double> {
 	}
 
 	public Result<Double, Double> computeBR(int i, List<Strategy<Double, Double>> s) throws IOException {
-//		int nPoints = 100;
 		int nPoints = Integer.parseInt(context.config.get("gridsize"));
 
 		TreeMap<Double, Double> pointwiseBRs = new TreeMap<>();
@@ -44,17 +43,11 @@ public class PWLSimpleBRCalculator implements BRCalculator<Double, Double> {
 			double v = maxValue * ((double) j) / (nPoints);
 			Double oldbid = s.get(i).getBid(v);
 			Optimizer.Result<Double> result = context.optimizer.findBR(i, v, oldbid, s);
-//			epsilonAbs = Math.max(epsilonAbs, UtilityHelpers.absoluteLoss(result.oldutility, result.utility));  // utility in string builder und dann ausschreiben
-//			epsilonRel = Math.max(epsilonRel, UtilityHelpers.relativeLoss(result.oldutility, result.utility));
 
 			Double newbid = context.updateRule.update(v, oldbid, result.bid, result.oldutility, result.utility);
 			pointwiseBRs.put(v,  newbid);
 			pointwiseUtility.put(v, result.utility);
 		}
-
-//		System.out.println("value utility bid");
-
-		System.out.println("debug");
 
 		File brStratFile = new File(outputFile);
 		FileWriter fileWriter = new FileWriter(brStratFile, true);
@@ -64,7 +57,7 @@ public class PWLSimpleBRCalculator implements BRCalculator<Double, Double> {
 		for (Map.Entry<Double, Double> entry : pointwiseBRs.entrySet()) {
 			Double key = entry.getKey();
 			Double value = entry.getValue();
-			bufferedWriter.write(String.format(Locale.ENGLISH, "%9.8f", key));
+			bufferedWriter.write(String.format(Locale.ENGLISH, "%4.3f", key));
 			bufferedWriter.write(" ");
 			bufferedWriter.write(String.format(Locale.ENGLISH, "%9.8f", pointwiseUtility.get(key)));
 			bufferedWriter.write(" ");

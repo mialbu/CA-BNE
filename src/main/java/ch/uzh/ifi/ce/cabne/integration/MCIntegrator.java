@@ -26,14 +26,14 @@ public class MCIntegrator<Value, Bid> extends Integrator<Value, Bid> {
 		int nsamples = context.getIntParameter("mcsamples");
 		double result = 0.0;
 		
-		Iterator<BidSampler<Value, Bid>.Sample> biditer = context.sampler.conditionalBidIterator(i, v, b, strats);  // TODO 16.12.: sampler mit 2dim b coden
+		Iterator<BidSampler<Value, Bid>.Sample> biditer = context.sampler.conditionalBidIterator(i, v, b, strats);
 		BidSampler<Value, Bid>.Sample sample;
 		
 		for (int MCsample=0; MCsample<nsamples; MCsample++) {
 			sample = biditer.next();
 			
 			// add mechanism output to total, weighted by density
-			result += sample.density * context.mechanism.computeUtility(i, v, sample.bids);  // TODO 16.12.: mechanism mit 2dim b coden - wd...
+			result += sample.density * context.mechanism.computeUtility(i, v, sample.bids);
 			if (Double.isNaN(result)) {
 				throw new RuntimeException();
 			}
@@ -47,21 +47,22 @@ public class MCIntegrator<Value, Bid> extends Integrator<Value, Bid> {
 			for (int j=0; j<strats.size(); j++) {
 				if (j==i) continue;
 				Double maxval = (Double) strats.get(j).getMaxValue();
-				if (maxval > 0.5) {  // mb 4.12.
+				if (maxval > 0.5) {
 					result *= maxval;
 					value*=maxval;
+
 				}
 			}
-//			System.out.println(value);
-			
 		} else if (b instanceof Double[]) {
 			for (int j=0; j<strats.size(); j++) {
 				if (j==i) continue;
 				Double[] maxval = (Double[]) strats.get(j).getMaxValue();
-				for (int k=0; k<maxval.length; k++) {
-					if (maxval[k] > 0.5) {  // mb 4.12.
-						result *= maxval[k];
-					}
+				if (maxval[0] > 0.5) {  // only used for the thesis setting, otherwise use the for loop underneath instead
+					result *= maxval[0];
+//				for (int k=0; k<maxval.length; k++) {
+//					if (maxval[k] > 0.5) {
+//						result *= maxval[k];
+//					}
 				}
 			}
 			
