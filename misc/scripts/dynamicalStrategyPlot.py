@@ -16,10 +16,10 @@ import itertools
 import time
 
 
-def plot_bne(nr):
+def plot_bne(folder, nr):
     #folder = "5-4-4/"
     #folder = "6123/"
-    folder = "5e3/1503/"
+    folder = folder
     stratsfile = folder + nr + ".strats"
     logfile = folder + nr + ".log"
     bundles = []
@@ -31,8 +31,8 @@ def plot_bne(nr):
         nr_players = int(log.readline().split(" ")[1])
         nr_items = int(log.readline().split(" ")[1])
         log.readline()
-        for player in log.readlines():
-            bundles.append("[" + player.rstrip().split(" ")[1] + "]")
+        for player in range(nr_players):
+            bundles.append("[" + log.readline().rstrip().split(" ")[1] + "]")
 
     max_player = 0
     data = []
@@ -83,15 +83,26 @@ def plot_bne(nr):
             else:
                 cur_label = "Bidder " + str(pl) + ": " + bundles[pl-1]
                 plt.plot(xxx, yyy, "-", clip_box=mpl.transforms.Bbox([[0, 0], [0.1, 0.3]]), clip_on=True, label=cur_label)
-        plt.title("Strategies (" + nr + ".strats)\nconverged: " + converged + "\nIteration: " + str(j) + "\n" + "%.5f" % current_eps)
+        truthful_x = []
+        truthful_y = []
+        for i in range(26):
+            truthful_x.append(i/10)
+            truthful_y.append(i/10)
+        plt.plot(truthful_x, truthful_y, label="Truthful Strategy", color="black")
+
+        plt.title("Equilibrium Strategies\nEpsilon = %.5f" % current_eps)
         plt.xlabel("Value for Bundle")
-        plt.ylabel("Best bid on Bundle")
+        plt.ylabel("Bid on Bundle")
+        plt.ylim(0, 2.5)
+        plt.xlim(0, 4)
         plt.legend()
 
     a = anim.FuncAnimation(fig, anim_update, frames=nr_iters, repeat=False, interval=600)
+
     plt.show()
 
 
-for i in range(10):
-   plot_bne("00" + str(i))
-# plot_bne("09")
+# for i in range(10):
+#    plot_bne("00" + str(i))
+#plot_bne("testFINAL/", "000")
+plot_bne("8itemsUsedInThesis/", "028")

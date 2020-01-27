@@ -108,7 +108,6 @@ public class BNEAlgorithm<Value, Bid> {
 				bestResponseMap.put(i, s);
 			}
 		}
-//		System.out.println();
 
 		// update strategies in place
 		for (int i : playingBidders) {
@@ -134,7 +133,6 @@ public class BNEAlgorithm<Value, Bid> {
 				bestResponseMap.put(i, s);
 			}
 		}
-//		System.out.println();
 
 		// update strategies in place
 		for (int i : playingBidders) {
@@ -187,15 +185,6 @@ public class BNEAlgorithm<Value, Bid> {
 		}
 
 		context.activateConfig("innerloop"); // this allows the callback to assume some config is always active.
-
-//		if (overbidding) {
-//			context.activateConfig("verification");
-//			callbackAfterIteration(0, IterationType.VERIFICATION, strategies, highestEpsilon);
-//
-//			Result<Value, Bid> result = verify(strategies, context.verifier, playingBidders);
-//			callbackAfterIteration(0, IterationType.VERIFICATION, result.equilibriumStrategies, result.epsilon);
-//			return result;
-//		}
 
 		callbackAfterIteration(0, IterationType.INNER, strategies, highestEpsilon);
 

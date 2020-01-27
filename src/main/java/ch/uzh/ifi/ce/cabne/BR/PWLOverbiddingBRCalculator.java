@@ -46,7 +46,7 @@ public class PWLOverbiddingBRCalculator implements BRCalculator<Double, Double[]
 	}
 
 	public Result<Double, Double[]> computeBR(int i, List<Strategy<Double, Double[]>> s) throws IOException {
-		int nPoints = Integer.parseInt(context.config.get("gridsize"));
+		int nPoints = 1000;
 		
 		TreeMap<Double, Double[]> pointwiseBRs = new TreeMap<>();
 		TreeMap<Double, Double> pointwiseUtility = new TreeMap<>();
@@ -105,7 +105,7 @@ public class PWLOverbiddingBRCalculator implements BRCalculator<Double, Double[]
 			pointwiseBRs.forEach((valuation, bestR) -> {
 				try {
 					bufferedWriter.write(
-							String.format(Locale.ENGLISH, "%4.3f", valuation) + " "
+							String.format(Locale.ENGLISH, "%5.4f", valuation) + " "
 							+ String.format(Locale.ENGLISH, "%9.8f", pointwiseUtility.get(valuation)) + " "
 							+ String.format(Locale.ENGLISH, "%9.8f", bestR[0]) + " "
 							+ String.format(Locale.ENGLISH, "%9.8f", bestR[1]) + "  ");

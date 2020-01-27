@@ -31,7 +31,7 @@ public class PatternSearch<Value, Bid> extends Optimizer<Value, Bid> {
 
 	// this method assumes that we are optimizing over [0, \infty).
 	@Override
-	public Result<Bid> findBR(int i, Value v, Bid currentBid, List<Strategy<Value, Bid>> strats) {  //TODO 16.12.: mb bid 2dim für alle oder einfach Bid []
+	public Result<Bid> findBR(int i, Value v, Bid currentBid, List<Strategy<Value, Bid>> strats) {
 		int patternSize = context.getIntParameter("patternsearch.size");
 		double patternscale = context.getDoubleParameter("patternsearch.stepsize") * initialScale;
 		int nSteps = context.getIntParameter("patternsearch.nsteps");

@@ -19,7 +19,6 @@ public class PWLSimpleBRCalculator implements BRCalculator<Double, Double> {
 	BNESolverContext<Double, Double> context;
 	String outputFile;
 
-
 	public PWLSimpleBRCalculator(BNESolverContext<Double, Double> context, String outputFile) {
 		this.context = context;
 		this.outputFile = outputFile;
@@ -30,7 +29,7 @@ public class PWLSimpleBRCalculator implements BRCalculator<Double, Double> {
 	}
 
 	public Result<Double, Double> computeBR(int i, List<Strategy<Double, Double>> s) throws IOException {
-		int nPoints = Integer.parseInt(context.config.get("gridsize"));
+		int nPoints = 1000;//Integer.parseInt(context.config.get("gridsize"));
 
 		TreeMap<Double, Double> pointwiseBRs = new TreeMap<>();
 		TreeMap<Double, Double> pointwiseUtility = new TreeMap<>();
@@ -57,7 +56,7 @@ public class PWLSimpleBRCalculator implements BRCalculator<Double, Double> {
 		for (Map.Entry<Double, Double> entry : pointwiseBRs.entrySet()) {
 			Double key = entry.getKey();
 			Double value = entry.getValue();
-			bufferedWriter.write(String.format(Locale.ENGLISH, "%4.3f", key));
+			bufferedWriter.write(String.format(Locale.ENGLISH, "%5.4f", key));
 			bufferedWriter.write(" ");
 			bufferedWriter.write(String.format(Locale.ENGLISH, "%9.8f", pointwiseUtility.get(key)));
 			bufferedWriter.write(" ");

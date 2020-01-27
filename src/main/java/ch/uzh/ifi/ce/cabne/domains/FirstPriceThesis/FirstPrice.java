@@ -14,7 +14,6 @@ public class FirstPrice implements Mechanism<Double, Double> {
 		this.allocations = max_feas_allocs;
 	}
 
-
 	/**
 	 * Computes the utility for a player
 	 *
@@ -27,32 +26,38 @@ public class FirstPrice implements Mechanism<Double, Double> {
 	public double computeUtility(int i, Double v, Double[] bids) { // (i = 0 - nr_players // v= 0.0-k)
 		// Winner determination - calculates the summed up value of the bids for each allocation
 		// (first price chooses the one that has the highest sum)
-		ArrayList<Integer> winner_alloc = new ArrayList<>();
-		double winner_alloc_value = 0;
-		double current_alloc_value;
-		int nr_tiebreaker_allocs = 1;
+		ArrayList<ArrayList<Integer>> winnerAllocs = new ArrayList<>();
+		double winnerAllocValue = -1.0;
+		double curAllocValue;
 
-		for (ArrayList<Integer> current_alloc : this.allocations) {
-			current_alloc_value = 0;
-			for (Integer currentPlayer : current_alloc) {
-				current_alloc_value += bids[currentPlayer.intValue()];
+		for (ArrayList<Integer> curAlloc : this.allocations) {
+			curAllocValue = 0;
+			for (Integer playerInAlloc : curAlloc) {
+				curAllocValue += bids[playerInAlloc];
 			}
-			if (current_alloc_value > winner_alloc_value) {
-				winner_alloc_value = current_alloc_value;
-				winner_alloc = current_alloc;
-				nr_tiebreaker_allocs = 1;
-			} else if (current_alloc_value == winner_alloc_value) {
-				if (current_alloc.contains(i)) {
-					nr_tiebreaker_allocs += 1;
-				}
+			if (curAllocValue > winnerAllocValue) {
+				winnerAllocs = new ArrayList<>();
+				winnerAllocs.add(curAlloc);
+				winnerAllocValue = curAllocValue;
+			} else if (curAllocValue > winnerAllocValue - 0.00000001) {
+				winnerAllocs.add(curAlloc);
+				winnerAllocValue = curAllocValue;
 			}
 		}
 
-		// if i is in the winner allocation, then the utility of i is its valuation minus its calculated price to pay.
-		if (winner_alloc.contains(i)) {
-			return (v - bids[i]) / nr_tiebreaker_allocs;
-		} else {
-			return 0.0;
+		int nWins = 0;
+		for (ArrayList<Integer> wAlloc : winnerAllocs) {
+			if (wAlloc.contains(i)) {
+				nWins++;
+			}
 		}
+
+		double pWins = (double) nWins / winnerAllocs.size();
+
+		double utilityWin = v - bids[i];
+
+		return pWins * utilityWin + (Math.pow(10, -6) * bids[i]); // or minus to get the lower bids more often - avoid noise if possible
+		// noises may come from bid spaces in which the bidder is indifferent - random chosen - noisy
+		// set regulating term to favor lower or higher bids...
 	}
 }

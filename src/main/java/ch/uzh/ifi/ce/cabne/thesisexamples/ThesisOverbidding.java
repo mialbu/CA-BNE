@@ -29,20 +29,17 @@ import java.util.*;
 public class ThesisOverbidding {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
-		// Create Con
-		// text And Read Config file for algorithm structure
+		// Create Context and read Config file for algorithm structure
 		BNESolverContext<Double, Double> contextSimple = new BNESolverContext<>();
 		BNESolverContext<Double, Double[]> contextOverbidding = new BNESolverContext<>();
 		String configfile = args[0];
 		String folder = args[1];
-		String os = args[2];
-		boolean simple = os.indexOf('s') >= 0;
-		boolean overbidding = os.indexOf('o') >= 0;
 		contextSimple.parseConfig(configfile);
 		contextOverbidding.parseConfig(configfile);
 
-		int startAuction = Integer.parseInt(args[3]);
-		int endAuction = Integer.parseInt(args[4]);
+		// Set number of starting and ending auction instance to
+		int startAuction = Integer.parseInt(args[2]);
+		int endAuction = Integer.parseInt(args[3]);
 		for (int auction = startAuction; auction < endAuction; auction++) {
 			// Read log file
 			String filename;
@@ -165,165 +162,160 @@ public class ThesisOverbidding {
 					eqArrayStratsList.add(eqArrayStrats.get(i));
 				}
 
-				contextSimple.activateConfig("verificationstep");
-				int gridsize = contextSimple.getIntParameter("gridsize");
+				contextSimple.activateConfig("outerloop");
+				int simpleGridsize = contextSimple.getIntParameter("gridsize");
 
-				if (simple) {
-					File brStratFile = new File(simpleBROutputFile);
-					FileWriter fileWriter = new FileWriter(brStratFile, false);
-					BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-					bufferedWriter.write("Simple Best Response On Equilibrium");
-					bufferedWriter.newLine();
-					bufferedWriter.close();
-					fileWriter.close();
-
-					PWLSimpleBRCalculator brcSimple = new PWLSimpleBRCalculator(contextSimple, simpleBROutputFile);
-
-					// Compute best response on equilibrium for each player
-					for (int curB = 0; curB < nrPlayers; curB++) {
-						PWLSimpleBRCalculator.Result<Double, Double> brResult = brcSimple.computeBR(curB, eqSimpleStratsList);
+				File oBrFile = new File(overbiddingBROutputFile);
+				FileWriter oFileWriter = new FileWriter(oBrFile, false);
+				BufferedWriter oBufferedWriter = new BufferedWriter(oFileWriter);
+				oBufferedWriter.write("Overbidding Best Response On Equilibrium");
+				oBufferedWriter.newLine();
+				oBufferedWriter.close();
+				oFileWriter.close();
+				// Create an array with all bidders that have interest in at least one item
+				ArrayList<Integer> biddersWithValue = new ArrayList<>();
+				for (Map.Entry<Integer, int[]> mapEntry : bundles.entrySet()) {
+					Integer player = mapEntry.getKey();
+					int[] bundle = mapEntry.getValue();
+					int sum = 0;
+					for (int item : bundle) {
+						sum += item;
+						if (sum > 0) {
+							break;
+						}
+					}
+					if (sum > 0) {
+						biddersWithValue.add(player);
 					}
 				}
 
-				if (overbidding) {
-					File brStratFile = new File(overbiddingBROutputFile);
-					FileWriter fileWriter = new FileWriter(brStratFile, false);
-					BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-					bufferedWriter.write("Overbidding Best Response On Equilibrium");
-					bufferedWriter.newLine();
-					bufferedWriter.close();
-					fileWriter.close();
+				PWLSimpleBRCalculator brcSimple = new PWLSimpleBRCalculator(contextSimple, simpleBROutputFile);
+				PWLOverbiddingBRCalculator brcOverbidding = new PWLOverbiddingBRCalculator(contextOverbidding, overbiddingBROutputFile);
+				File brStratFile = new File(simpleBROutputFile);
+				FileWriter fileWriter = new FileWriter(brStratFile, false);
+				BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+				bufferedWriter.write("Simple Best Response On Equilibrium");
+				bufferedWriter.newLine();
+				bufferedWriter.close();
+				fileWriter.close();
 
-					// Create an array with all bidders that have interest in at least one item
-					ArrayList<Integer> biddersWithValue = new ArrayList<>();
-					for (Map.Entry<Integer, int[]> mapEntry : bundles.entrySet()) {
-						Integer player = mapEntry.getKey();
-						int[] bundle = mapEntry.getValue();
-						int sum = 0;
-						for (int item : bundle) {
-							sum += item;
-							if (sum > 0) {
-								break;
-							}
-						}
-						if (sum > 0) {
-							biddersWithValue.add(player);
-						}
-					}
+				// Run overbidding algorithm for each bidder
+				ArrayList<Integer> doneSimpleResults = new ArrayList<>();
+				for (int oBidder : biddersWithValue) {
 
-					PWLOverbiddingBRCalculator brcOverbidding = new PWLOverbiddingBRCalculator(contextOverbidding, overbiddingBROutputFile);
-
-					// Run overbidding algorithm for each bidder
-					for (int oBidder : biddersWithValue) {
-
-						int occurencesInWinnerAllocations = 0;
-						ArrayList<ArrayList<Integer>> checkingAllocs = new ArrayList<>();
-						for (ArrayList<Integer> curAlloc : maxFeasibleAllocations) {
-							ArrayList<Integer> checkingAlloc = new ArrayList<>();
-							for (Integer bidder : curAlloc) {
-								if (bidder == oBidder) {
-									occurencesInWinnerAllocations++;
-								}
-								if (curAlloc.contains(oBidder)) {
-									if (bidder == oBidder) {
-										checkingAlloc.add(6);
-									} else {
-										checkingAlloc.add(bidder);
-									}
-								}
+					int occurencesInWinnerAllocations = 0;
+					ArrayList<ArrayList<Integer>> checkingAllocs = new ArrayList<>();
+					for (ArrayList<Integer> curAlloc : maxFeasibleAllocations) {
+						ArrayList<Integer> checkingAlloc = new ArrayList<>();
+						for (Integer bidder : curAlloc) {
+							if (bidder == oBidder) {
+								occurencesInWinnerAllocations++;
 							}
 							if (curAlloc.contains(oBidder)) {
-								Collections.sort(checkingAlloc);
-								checkingAllocs.add(checkingAlloc);
+								if (bidder == oBidder) {
+									checkingAlloc.add(6);
+								} else {
+									checkingAlloc.add(bidder);
+								}
+							}
+						}
+						if (curAlloc.contains(oBidder)) {
+							Collections.sort(checkingAlloc);
+							checkingAllocs.add(checkingAlloc);
+						}
+					}
+					if (occurencesInWinnerAllocations > 1) {
+						// Calculate all possible bundles that are possible for overbidding
+						HashMap<Integer, int[]> oBundles = bundleGenerator.generateParentBundles(bundles.get(oBidder));
+						// This HashMap will map bundles from oBundles to its key (maximal feasible allocations), so that
+						// only one best response has to be calculated for each variation of maximal feasible allocation.
+						HashMap<ArrayList<ArrayList<Integer>>, ArrayList<int[]>> oMaxFeasibleAllocationsMap = new HashMap<>();
+
+						// Calculate maximal feasible allocations for each overbidding bundle, collect bundles with
+						// the exact same maximal feasible allocation in the HashMap under the same key.
+						boolean curMaxFeasAdded;
+						for (Map.Entry<Integer, int[]> entry : oBundles.entrySet()) {
+							int[] oBundle = entry.getValue();
+							curMaxFeasAdded = false;
+
+							ArrayList<ArrayList<Integer>> curMaxFeas = bundleGenerator.calculateOverbiddingMaxFeasibleAllocs(oBidder, oBundle);
+							for (Map.Entry<ArrayList<ArrayList<Integer>>, ArrayList<int[]>> e : oMaxFeasibleAllocationsMap.entrySet()) {
+								ArrayList<ArrayList<Integer>> k = e.getKey();
+								ArrayList<int[]> v = e.getValue();
+
+								if (k.containsAll(curMaxFeas) && curMaxFeas.containsAll(k)) {
+									ArrayList<int[]> oBundleListSameMaxFeas;
+									oBundleListSameMaxFeas = v;
+									oBundleListSameMaxFeas.add(oBundle);
+									oMaxFeasibleAllocationsMap.put(k, oBundleListSameMaxFeas);
+									curMaxFeasAdded = true;
+									break;
+								}
+							}
+							if (!curMaxFeasAdded) {
+								ArrayList<int[]> listToAdd = new ArrayList<>();
+								listToAdd.add(oBundle);
+								oMaxFeasibleAllocationsMap.put(curMaxFeas, listToAdd);
 							}
 						}
 
-						if (occurencesInWinnerAllocations > 1) {
-							// Calculate all possible bundles that are possible for overbidding
-							HashMap<Integer, int[]> oBundles = bundleGenerator.generateParentBundles(bundles.get(oBidder));
-
-							// This HashMap will map bundles from oBundles to its key (maximal feasible allocations), so that
-							// only one best response has to be calculated for each variation of maximal feasible allocation.
-							HashMap<ArrayList<ArrayList<Integer>>, ArrayList<int[]>> oMaxFeasibleAllocationsMap = new HashMap<>();
-
-							// Calculate maximal feasible allocations for each overbidding bundle, collect bundles with
-							// the exact same maximal feasible allocation in the HashMap under the same key.
-							boolean curMaxFeasAdded;
-							for (Map.Entry<Integer, int[]> entry : oBundles.entrySet()) {
-								int[] oBundle = entry.getValue();
-								curMaxFeasAdded = false;
-
-								ArrayList<ArrayList<Integer>> curMaxFeas = bundleGenerator.calculateOverbiddingMaxFeasibleAllocs(oBidder, oBundle);
-								for (Map.Entry<ArrayList<ArrayList<Integer>>, ArrayList<int[]>> e : oMaxFeasibleAllocationsMap.entrySet()) {
-									ArrayList<ArrayList<Integer>> k = e.getKey();
-									ArrayList<int[]> v = e.getValue();
-
-									if (k.containsAll(curMaxFeas) && curMaxFeas.containsAll(k)) {
-										ArrayList<int[]> oBundleListSameMaxFeas;
-										oBundleListSameMaxFeas = v;
-										oBundleListSameMaxFeas.add(oBundle);
-										oMaxFeasibleAllocationsMap.put(k, oBundleListSameMaxFeas);
-										curMaxFeasAdded = true;
-										break;
-									}
-								}
-								if (!curMaxFeasAdded) {
-									ArrayList<int[]> listToAdd = new ArrayList<>();
-									listToAdd.add(oBundle);
-									oMaxFeasibleAllocationsMap.put(curMaxFeas, listToAdd);
-								}
-							}
-
-							// Calculate the overbidding best response for all possible distinct maximal feasible allocations.
-							for (Map.Entry<ArrayList<ArrayList<Integer>>, ArrayList<int[]>> entry : oMaxFeasibleAllocationsMap.entrySet()) {
-								ArrayList<ArrayList<Integer>> k = entry.getKey();
-								if (k.get(0).size() == 1) {
-									if (k.get(0).get(0) == 6) {
-										continue;
-									}
-								}
-								if (checkingAllocs.containsAll(k) && k.containsAll(checkingAllocs)) {
+						// Calculate the overbidding best response for all possible distinct maximal feasible allocations.
+						for (Map.Entry<ArrayList<ArrayList<Integer>>, ArrayList<int[]>> entry : oMaxFeasibleAllocationsMap.entrySet()) {
+							ArrayList<ArrayList<Integer>> k = entry.getKey();
+							if (k.get(0).size() == 1) {
+								if (k.get(0).get(0) == 6) {
 									continue;
 								}
-
-								// Create a list of the bidders that are additionally in conflict by bidding on the current oBundle.
-								// Send it to the mechanism to print it. This is easier to do here than afterwards.
-								ArrayList<Integer> companions = new ArrayList<>();
-								for (ArrayList<Integer> trueAlloc : maxFeasibleAllocations) {
-									if (trueAlloc.contains(oBidder)) {
-										for (int winner : trueAlloc) {
-											if (winner != oBidder) {
-												companions.add(winner);
-											}
-										}
-									}
-								}
-								ArrayList<Integer> conflictingPartners = new ArrayList<>();
-								Collections.sort(companions);
-								for (int companion : companions) {
-									boolean stillCompanion = false;
-									for (ArrayList<Integer> oAlloc : k) {
-										for (Integer oCompanion : oAlloc) {
-											if (companion == oCompanion) {
-												stillCompanion = true;
-											}
-										}
-									}
-									if (!stillCompanion) {
-										conflictingPartners.add(companion);
-									}
-								}
-
-								ArrayList<int[]> oBundleList = entry.getValue();
-
-								brcOverbidding.setOBundles(oBundleList);
-								brcOverbidding.setOMaxFeasAllocs(k);
-								brcOverbidding.setGeneratedConflicts(conflictingPartners);
-
-								oMechanism.setOverbiddingAllocations(k);
-
-								BRCalculator.Result<Double, Double[]> overbiddingResult = brcOverbidding.computeBR(oBidder, eqArrayStratsList);
 							}
+							if (checkingAllocs.containsAll(k) && k.containsAll(checkingAllocs)) {
+								continue;
+							}
+
+							// Create a list of the bidders that are additionally in conflict by bidding on the current oBundle.
+							// Send it to the mechanism to print it. This is easier to do here than afterwards.
+							ArrayList<Integer> companions = new ArrayList<>();
+							for (ArrayList<Integer> trueAlloc : maxFeasibleAllocations) {
+								if (trueAlloc.contains(oBidder)) {
+									for (int winner : trueAlloc) {
+										if (winner != oBidder) {
+											companions.add(winner);
+										}
+									}
+								}
+							}
+							ArrayList<Integer> conflictingPartners = new ArrayList<>();
+							Collections.sort(companions);
+							for (int companion : companions) {
+								boolean stillCompanion = false;
+								for (ArrayList<Integer> oAlloc : k) {
+									for (Integer oCompanion : oAlloc) {
+										if (companion == oCompanion) {
+											stillCompanion = true;
+										}
+									}
+								}
+								if (!stillCompanion) {
+									conflictingPartners.add(companion);
+								}
+							}
+
+							ArrayList<int[]> oBundleList = entry.getValue();
+
+							brcOverbidding.setOBundles(oBundleList);
+							brcOverbidding.setOMaxFeasAllocs(k);
+							brcOverbidding.setGeneratedConflicts(conflictingPartners);
+
+							oMechanism.setOverbiddingAllocations(k);
+
+							BRCalculator.Result<Double, Double[]> overbiddingResult = brcOverbidding.computeBR(oBidder, eqArrayStratsList);
+
+							if (!doneSimpleResults.contains(oBidder)) {
+								// Compute best response on equilibrium for each player
+								PWLSimpleBRCalculator.Result<Double, Double> brResult = brcSimple.computeBR(oBidder, eqSimpleStratsList);
+//								System.out.println(1);
+							}
+
+							doneSimpleResults.add(oBidder);
 						}
 					}
 				}

@@ -58,7 +58,7 @@ public class UnivariatePWLOverbiddingStrategy implements Strategy<Double, Double
 		for (int j = 0; j < values.length; j++) {
 			Double[] currentBids = new Double[2];
 			currentBids[0] = bids[j];
-			currentBids[1] = 0.0; //then compare to when it is set to 0.0 initially
+			currentBids[1] = bids[j];
 			intervals.put(values[j], currentBids);
 		}
 		return new UnivariatePWLOverbiddingStrategy(intervals);
